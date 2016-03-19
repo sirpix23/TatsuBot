@@ -26,10 +26,10 @@
 		"chalk": "*",
 		"entities": ">=1.1.1",
 		"winston": ">=2.2.0",
-		"sax": ">=1.2.1"
-		"readable-stream": ">=2.0.5"
-		"node-array-indexofobject": "danmactough/node-array-indexofobject#master"
-		"addressparser": ">=1.0.1"
+		"sax": ">=1.2.1",
+		"readable-stream": ">=2.0.5",
+		"node-array-indexofobject": "danmactough/node-array-indexofobject#master",
+		"addressparser": ">=1.0.1",
 		"feedparser": ">=1.1.4"
 	}
 }
