@@ -50,7 +50,7 @@ var aliases = {
 };
 
 var commands = {
-	"help": {
+	"tatsuhelp": {
 		desc: "Sends a DM containing all of the commands. If a command is specified gives info on that command.",
 		usage: "[command]", deleteCommand: true, shouldDisplay: false,
 		process: function(bot, msg, suffix) {
