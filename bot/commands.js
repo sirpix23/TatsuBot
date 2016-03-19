@@ -136,10 +136,10 @@ Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide
 
 var aliases = {
 	"th": "tatsuhelp", "tatsucommands": "tatsuhelp",
-	"server": "botserver",
+	/*"server": "botserver",*/
 	"backwards": "reverse",
 	"myid": "id",
-	"p": "ping",
+	"p": "tatsuping",
 	/*"j": "join", "joins": "join",*/
 	"i": "info",
 	"a": "avatar",
@@ -153,7 +153,8 @@ var aliases = {
 	"number": "numberfacts", "num": "numberfacts",
 	"cat": "catfacts", "meow": "catfacts", "neko": "catfacts",
 	"imgur": "image", "im": "image",
-	"feed": "rss", "stream":"rss"
+	"feed": "rss", "stream":"rss",
+	"tatsu": "tatsuabout"
 };
 
 var commands = {
@@ -193,7 +194,7 @@ var commands = {
 	"tatsuserver": {
 		desc: "Get a link to the **Friday Night Gaming Club** Discord server.",
 		cooldown: 10, usage: "",
-		process: function(bot, msg) { bot.sendMessage(msg, "My main server is here: **https://discord.gg/0jiPgpPH9wpNLFj7**"); }
+		process: function(bot, msg) { bot.sendMessage(msg, ":house_with_garden: I reside here: **https://discord.gg/0jiPgpPH9wpNLFj7**"); }
 	},
 	"reverse": {
 		desc: "Returns the input backwards",
@@ -214,7 +215,7 @@ var commands = {
 		desc: "boop", usage: "", deleteCommand: false, cooldown: 2, shouldDisplay: false,
 		process: (bot, msg) => { bot.sendMessage(msg, "boop", (e,sentMsg)=>{bot.updateMessage(sentMsg, "boop    |    Time taken: " + (sentMsg.timestamp - msg.timestamp) + "ms")}); }
 	},
-	"ping": {
+	"tatsuping": {
 		desc: "Replies with pong.",
 		cooldown: 2, shouldDisplay: false, usage: "",
 		process: function(bot, msg) {
@@ -276,7 +277,7 @@ var commands = {
 		desc: "About me",
 		deleteCommand: true, cooldown: 10, usage: "",
 		process: function(bot, msg) {
-			bot.sendMessage(msg, ":id:I'm Tatsu-chan!\n__My Artist:__ Foneza\n__My Authors:__ Brussell, David, Edgar, Henry\n__Library:__ Discord.js\n__Version:__ " + version + "\n__I reside on:__ https://discord.gg/0kvLlwb7slG3XCCQ\n__Info and Commands:__ Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
+			bot.sendMessage(msg, ":id: **Hello, I'm Tatsu-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **I reside in:** https://discord.gg/0jiPgpPH9wpNLFj7\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
 		}
 	},
 	"dice": {
@@ -306,7 +307,7 @@ var commands = {
 			try {
 				if (suffix && /\d+/.test(suffix)) { roll = parseInt(suffix.replace(/[^\d]/g, "")); }
 			} catch (err) { console.log(colors.cError(" ERROR ") + err); bot.sendMessage(msg, "⚠ Error parsing suffix into int", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); }
-			bot.sendMessage(msg, msg.author.username + " rolled **1-" + roll + "** and got " + Math.floor((Math.random() * (roll)) + 1));
+			bot.sendMessage(msg, ":1234: " + msg.author.username + " rolled **1-" + roll + "** and got " + Math.floor((Math.random() * (roll)) + 1));
 		}
 	},
 	"info": {
@@ -323,25 +324,25 @@ var commands = {
 						msg.mentions.map(function(usr) {
 							var toSend = [], count = 0;
 							toSend.push("ℹ **Info on** " + usr.username + " (" + usr.discriminator + ")");
-							toSend.push("**ID:** " + usr.id);
-							if (usr.game && usr.game.name !== undefined && usr.game.name !== null && usr.game.name !== "null") toSend.push("**Status:** " + usr.status + " **last playing** " + usr.game.name);
-							else toSend.push("**Status:** " + usr.status);
+							toSend.push(":black_small_square: **ID:** " + usr.id);
+							if (usr.game && usr.game.name !== undefined && usr.game.name !== null && usr.game.name !== "null") toSend.push(":black_small_square: **Status:** " + usr.status + " **last playing** " + usr.game.name);
+							else toSend.push(":black_small_square: **Status:** " + usr.status);
 							var detailsOf = msg.channel.server.detailsOfUser(usr);
-							if (detailsOf) toSend.push("**Joined on:** " + new Date(msg.channel.server.detailsOfUser(usr).joinedAt).toUTCString());
-							else toSend.push("**Joined on:** Error");
+							if (detailsOf) toSend.push(":black_small_square: **Joined on:** " + new Date(msg.channel.server.detailsOfUser(usr).joinedAt).toUTCString());
+							else toSend.push(":black_small_square: **Joined on:** Error");
 							if (msg.channel.server.rolesOfUser(usr.id) != undefined) {
 								var roles = msg.channel.server.rolesOfUser(usr.id).map(role=>role.name);
 								if (roles) {
 									roles = roles.join(", ").replace(/@/g, '@\u200b');
 									if (roles && roles !== "")
-										if (roles.length <= 1500) { toSend.push("**Roles:** `" + roles + "`"); } else { toSend.push("**Roles:** `" + roles.split(", ").length + "`"); }
+										if (roles.length <= 1500) { toSend.push(":black_small_square: **Roles:** `" + roles + "`"); } else { toSend.push(":black_small_square: **Roles:** `" + roles.split(", ").length + "`"); }
 									else
-										toSend.push("**Roles:** `none`");
-								} else toSend.push("**Roles:** Error");
-							} else toSend.push("**Roles:** Error");
+										toSend.push(":black_small_square: **Roles:** `none`");
+								} else toSend.push(":black_small_square: **Roles:** Error");
+							} else toSend.push(":black_small_square: **Roles:** Error");
 							bot.servers.map(server=>{ if (server.members.indexOf(usr) > -1) { count += 1; }});
-							if (count > 1) { toSend.push("**Shared servers:** " + count); }
-							if (usr.avatarURL != null) { toSend.push("**Avatar URL:** `" + usr.avatarURL + "`"); }
+							if (count > 1) { toSend.push(":black_small_square: **Shared servers:** " + count); }
+							if (usr.avatarURL != null) { toSend.push(":black_small_square: **Avatar URL:** `" + usr.avatarURL + "`"); }
 							bot.sendMessage(msg, toSend);
 						});
 					} else {
@@ -353,25 +354,25 @@ var commands = {
 							if (usr) {
 								var toSend = [], count = 0;
 								toSend.push("ℹ **Info on** " + usr.username + " (" + usr.discriminator + ")");
-								toSend.push("**ID:** " + usr.id);
-								if (usr.game && usr.game.name !== undefined && usr.game.name !== null && usr.game.name !== "null") toSend.push("**Status:** " + usr.status + " **last playing** " + usr.game.name);
-								else toSend.push("**Status:** " + usr.status);
+								toSend.push(":black_small_square: **ID:** " + usr.id);
+								if (usr.game && usr.game.name !== undefined && usr.game.name !== null && usr.game.name !== "null") toSend.push(":black_small_square: **Status:** " + usr.status + " **last playing** " + usr.game.name);
+								else toSend.push(":black_small_square: **Status:** " + usr.status);
 								var detailsOf = msg.channel.server.detailsOfUser(usr);
-								if (detailsOf) toSend.push("**Joined on:** " + new Date(msg.channel.server.detailsOfUser(usr).joinedAt).toUTCString());
-								else toSend.push("**Joined on:** Error");
+								if (detailsOf) toSend.push(":black_small_square: **Joined on:** " + new Date(msg.channel.server.detailsOfUser(usr).joinedAt).toUTCString());
+								else toSend.push(":black_small_square: **Joined on:** Error");
 								if (msg.channel.server.rolesOfUser(usr.id) != undefined) {
 									var roles = msg.channel.server.rolesOfUser(usr.id).map(role=>role.name);
 									if (roles) {
 										roles = roles.join(", ").replace(/@/g, '@\u200b');
 										if (roles && roles !== "")
-											if (roles.length <= 1500) { toSend.push("**Roles:** `" + roles + "`"); } else { toSend.push("**Roles:** `" + roles.split(", ").length + "`"); }
+											if (roles.length <= 1500) { toSend.push(":black_small_square: **Roles:** `" + roles + "`"); } else { toSend.push("**Roles:** `" + roles.split(", ").length + "`"); }
 										else
-											toSend.push("**Roles:** `none`");
-									} else toSend.push("**Roles:** Error");
-								} else toSend.push("**Roles:** Error");
+											toSend.push(":black_small_square: **Roles:** `none`");
+									} else toSend.push(":black_small_square: **Roles:** Error");
+								} else toSend.push(":black_small_square: **Roles:** Error");
 								bot.servers.map(server=>{ if (server.members.indexOf(usr) > -1) { count += 1; }});
-								if (count > 1) { toSend.push("**Shared servers:** " + count); }
-								if (usr.avatarURL != null) { toSend.push("**Avatar URL:** `" + usr.avatarURL + "`"); }
+								if (count > 1) { toSend.push(":black_small_square: **Shared servers:** " + count); }
+								if (usr.avatarURL != null) { toSend.push(":black_small_square: **Avatar URL:** `" + usr.avatarURL + "`"); }
 								bot.sendMessage(msg, toSend);
 							} else bot.sendMessage(msg, "User \"" + user + "\" not found. If you want to get info on multiple users separate them with a comma.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 15000}); });
 						});
@@ -379,17 +380,17 @@ var commands = {
 				} else {
 					var toSend = [];
 					toSend.push("ℹ **Info on** " + msg.channel.server.name);
-					toSend.push("**Server ID:** " + msg.channel.server.id);
-					toSend.push("**Owner:** " + msg.channel.server.owner.username + " (**ID:** " + msg.channel.server.owner.id + ")");
-					toSend.push("**Region:** " + msg.channel.server.region);
-					toSend.push("**Members:** " + msg.channel.server.members.length + " **Channels:** " + msg.channel.server.channels.length);
+					toSend.push(":black_small_square: **Server ID:** " + msg.channel.server.id);
+					toSend.push(":black_small_square: **Owner:** " + msg.channel.server.owner.username + " (**ID:** " + msg.channel.server.owner.id + ")");
+					toSend.push(":black_small_square: **Region:** " + msg.channel.server.region);
+					toSend.push(":black_small_square: **Members:** " + msg.channel.server.members.length + " **Channels:** " + msg.channel.server.channels.length);
 					var roles = msg.channel.server.roles.map(role=>role.name);
 					roles = roles.join(", ").replace(/@/g, '@\u200b');
-					if (roles.length <= 1500) toSend.push("**Roles:** `" + roles + "`");
-					else toSend.push("**Roles:** `" + roles.split(", ").length + "`");
-					toSend.push("**Default channel:** " + msg.channel.server.defaultChannel);
-					toSend.push("**This channel's id:** " + msg.channel.id);
-					toSend.push("**Icon URL:** `" + msg.channel.server.iconURL + "`");
+					if (roles.length <= 1500) toSend.push(":black_small_square: **Roles:** `" + roles + "`");
+					else toSend.push(":black_small_square: **Roles:** `" + roles.split(", ").length + "`");
+					toSend.push(":black_small_square: **Default channel:** " + msg.channel.server.defaultChannel);
+					toSend.push(":black_small_square: **This channel's id:** " + msg.channel.id);
+					toSend.push(":black_small_square: **Icon URL:** `" + msg.channel.server.iconURL + "`");
 					bot.sendMessage(msg, toSend);
 				}
 			} else bot.sendMessage(msg, "⚠ Can't do that in a DM.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
@@ -440,7 +441,7 @@ var commands = {
 					bot.sendMessage(msg, "I chose **" + choices[choice] + "**");
 				} else {
 					choice = Math.floor(Math.random() * (choices.length));
-					bot.sendMessage(msg, "I chose **" + choices[choice].replace(/@/g, '@\u200b') + "**");
+					bot.sendMessage(msg, "I chose **" + choices[choice].replace(/@/g, '@\u200b') + "** :point_left:");
 				}
 			}
 		}
@@ -455,7 +456,7 @@ var commands = {
 			if (msg.everyoneMentioned || suffix.toLowerCase() == "everyone") {
 
 				if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do that in a direct message"); return; }
-				if (LottoDB.hasOwnProperty(msg.channel.id)) { bot.sendMessage(msg, "There is already a lottery running!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+				if (LottoDB.hasOwnProperty(msg.channel.id)) { bot.sendMessage(msg, ":heavy_exclamation_mark: There is already a lottery running!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 				bot.sendMessage(msg, "Out of " + msg.channel.server.members.length + " members on this server, " + msg.channel.server.members.random().username + " is the winner!");
 
 			} else if (suffix.split(" ")[0] == "new") {
@@ -465,9 +466,9 @@ var commands = {
 					var maxentries = (/^\d+$/.test(suffix.split(" ")[1])) ? parseInt(suffix.split(" ")[1]) : 1;
 				}
 				if (LottoDB.hasOwnProperty(currentchannel)) {
-					bot.sendMessage(msg.channel, "Lottery already running, please wait for it to end.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
+					bot.sendMessage(msg.channel, ":100: Lottery already running, please wait for it to end.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
 				} else {
-					bot.sendMessage(msg, "New lottery started by **" + msg.author.username + "** (max entries per user: " + maxentries + "). Use `" + config.command_prefix + "lotto enter` to enter.");
+					bot.sendMessage(msg, ":100: New lottery started by **" + msg.author.username + "** (max entries per user: " + maxentries + "). Use `" + config.command_prefix + "lotto enter` to enter.");
 					var object = {"max": maxentries, "msg": msg, "entries": "", "starter": msg.author.id};
 					LottoDB[currentchannel] = [];
 					LottoDB[currentchannel][0] = object;
@@ -480,31 +481,31 @@ var commands = {
 				if (LottoDB.hasOwnProperty(msg.channel.id)) {
 					if (msg.author.id == LottoDB[currentchannel][0].starter || msg.channel.permissionsOf(msg.author).hasPermission("manageChannel")) {
 						if (LottoDB[currentchannel][0].entries.split(",").length < 3) {
-							bot.sendMessage(msg, "Lottery ended but there have to be two entries into the lottery for a winner to be picked.");
+							bot.sendMessage(msg, ":100: Lottery ended but there have to be two entries into the lottery for a winner to be picked.");
 							delete LottoDB[currentchannel];
 						} else {
 							var winner = msg.channel.server.members.get("id", LottoDB[currentchannel][0].entries.split(",")[Math.floor((Math.random() * (LottoDB[currentchannel][0].entries.split(",").length - 1)) + 1)]);
-							bot.sendMessage(msg, "Out of **" + (LottoDB[currentchannel][0].entries.split(",").length - 1) + "** entries the winner is " + winner);
+							bot.sendMessage(msg, ":100: Out of **" + (LottoDB[currentchannel][0].entries.split(",").length - 1) + "** entries the winner is " + winner);
 							delete LottoDB[currentchannel];
 						}
-					} else { bot.sendMessage(msg, "Only the person that started the lottery can end it!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
-				} else { bot.sendMessage(msg, "There isn't a lottery running in this channel!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+					} else { bot.sendMessage(msg, ":x: Only the person that started the lottery can end it!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+				} else { bot.sendMessage(msg, ":heavy_exclamation_mark: There isn't a lottery running in this channel!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 
 			} else if (suffix.replace(" ", "") == "enter") {
 
 				if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do that in a direct message"); return; }
 				if (LottoDB.hasOwnProperty(currentchannel)) {
 					if (LottoDB[currentchannel][0].entries.split(",").indexOf(msg.author.id) > -1) {
-						if (LottoDB[currentchannel][0].max < 2) { bot.sendMessage(msg.channel, "You can only enter this lottery **1** time.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
-						if (LottoDB[currentchannel][0].entries.split(",").filter(function(value) { return value == msg.author.id; }).length >= LottoDB[currentchannel][0].max) { bot.sendMessage(msg.channel, "You can only enter this lottery **" + LottoDB[currentchannel][0].max + "** times.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+						if (LottoDB[currentchannel][0].max < 2) { bot.sendMessage(msg.channel, ":100: You can only enter this lottery **1** time.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+						if (LottoDB[currentchannel][0].entries.split(",").filter(function(value) { return value == msg.author.id; }).length >= LottoDB[currentchannel][0].max) { bot.sendMessage(msg.channel, ":100: You can only enter this lottery **" + LottoDB[currentchannel][0].max + "** times.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 						LottoDB[currentchannel][0].entries = LottoDB[currentchannel][0].entries + "," + msg.author.id;
 						bot.sendMessage(msg.channel, "Added " + msg.author.username + " to the lottery");
 					} else {
 						LottoDB[currentchannel][0].entries = LottoDB[currentchannel][0].entries + "," + msg.author.id;
-						bot.sendMessage(msg.channel, "Added " + msg.author.username + " to the lottery");
+						bot.sendMessage(msg.channel, ":100: Added " + msg.author.username + " to the lottery");
 						return;
 					}
-				} else { bot.sendMessage(msg.channel, "No lottery to enter!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+				} else { bot.sendMessage(msg.channel, ":100: No lottery to enter!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 
 			} else if (msg.mentions.length > 0) {
 
@@ -525,9 +526,9 @@ var commands = {
 			if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do that in a direct message"); return; }
 			if (suffix.split(" ")[0] == "new") {
 
-				if (VoteDB.hasOwnProperty(currentChannel)) { bot.sendMessage(msg, "There is already a vote pending!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+				if (VoteDB.hasOwnProperty(currentChannel)) { bot.sendMessage(msg, ":inbox_tray: There is already a vote pending!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 				var topic = (suffix.replace(" -noautoend", "").split(" ").length > 1) ? suffix.replace(" -noautoend", "").substring(4).replace(/@/g, '@\u200b') : "None";
-				bot.sendMessage(msg, "New vote started by **" + msg.author.username.replace(/@/g, '@\u200b') + "**. Topic: `" + topic + "`. To vote say `" + config.command_prefix + "vote +/-`\nUpvotes: 0\nDownvotes: 0", function(err, message) {
+				bot.sendMessage(msg, ":inbox_tray: New vote started by **" + msg.author.username.replace(/@/g, '@\u200b') + "**. Topic: `" + topic + "`. To vote say `" + config.command_prefix + "vote +/-`\nUpvotes: 0\nDownvotes: 0", function(err, message) {
 					if (err) { bot.sendMessage(msg, err); return; }
 					var object = {"topic": topic, "annMsg": message, "upvoters": "", "downvoters": "", "upvotes": 0, "downvotes": 0, "starter": msg.author.id};
 					VoteDB[currentChannel] = [];
@@ -537,16 +538,16 @@ var commands = {
 
 			} else if (suffix.replace(" ", "") == "end") {
 
-				if (!VoteDB.hasOwnProperty(currentChannel)) { bot.sendMessage(msg, "There isn't a vote to end!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+				if (!VoteDB.hasOwnProperty(currentChannel)) { bot.sendMessage(msg, ":inbox_tray: There isn't a vote to end!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 				if (msg.author.id == VoteDB[currentChannel][0].starter || msg.channel.permissionsOf(msg.author).hasPermission("manageChannel")) {
 					bot.deleteMessage(VoteDB[currentChannel][0].annMsg);
-					bot.sendMessage(msg, "**Results of last vote:**\nTopic: `" + VoteDB[currentChannel][0].topic + "`\nUpvotes: `" + VoteDB[currentChannel][0].upvotes + " " + Math.round((VoteDB[currentChannel][0].upvotes / (VoteDB[currentChannel][0].upvotes + VoteDB[currentChannel][0].downvotes)) * 100) + "%`\nDownvotes: `" + VoteDB[currentChannel][0].downvotes + " " + Math.round((VoteDB[currentChannel][0].downvotes / (VoteDB[currentChannel][0].upvotes + VoteDB[currentChannel][0].downvotes)) * 100) + "%`");
+					bot.sendMessage(msg, ":inbox_tray: **Results of last vote:**\nTopic: `" + VoteDB[currentChannel][0].topic + "`\nUpvotes: `" + VoteDB[currentChannel][0].upvotes + " " + Math.round((VoteDB[currentChannel][0].upvotes / (VoteDB[currentChannel][0].upvotes + VoteDB[currentChannel][0].downvotes)) * 100) + "%`\nDownvotes: `" + VoteDB[currentChannel][0].downvotes + " " + Math.round((VoteDB[currentChannel][0].downvotes / (VoteDB[currentChannel][0].upvotes + VoteDB[currentChannel][0].downvotes)) * 100) + "%`");
 					delete VoteDB[currentChannel];
-				} else { bot.sendMessage(msg, "Only the person that started the vote can end it!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+				} else { bot.sendMessage(msg, ":heavy_exclamation_mark: Only the person that started the vote can end it!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 
 			} else if (suffix.replace(" ", "") == "+" || suffix.replace(" ", "") == "-") {
 
-				if (VoteDB.hasOwnProperty(currentChannel) == false) { bot.sendMessage(msg, "There isn't a vote to vote on!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+				if (VoteDB.hasOwnProperty(currentChannel) == false) { bot.sendMessage(msg, ":inbox_tray: There isn't a vote to vote on!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 				if (suffix.replace(" ", "") == "+") {
 					if (VoteDB[currentChannel][0].upvoters.indexOf(msg.author.id) > -1) { return; }
 					if (VoteDB[currentChannel][0].downvoters.indexOf(msg.author.id) > -1) {
@@ -594,7 +595,7 @@ var commands = {
 							"options": suffix
 						}
 					}, (error, response, body) => {
-						if (!error && response.statusCode == 201) bot.sendMessage(msg, msg.author.username.replace(/@/g, '@\u200b') + " created a strawpoll. Vote here: http://strawpoll.me/" + body.id);
+						if (!error && response.statusCode == 201) bot.sendMessage(msg,":clipboard: " + msg.author.username.replace(/@/g, '@\u200b') + " created a strawpoll. Vote here: http://strawpoll.me/" + body.id);
 						else if (error) bot.sendMessage(msg, error);
 						else if (response.statusCode != 201) bot.sendMessage(msg, "Got status code " + response.statusCode);
 					}
@@ -608,7 +609,7 @@ var commands = {
 		cooldown: 4,
 		process: function(bot, msg) {
 			var responses = ["It is certain", "Without a doubt", "You may rely on it", "Most likely", "Yes", "Signs point to yes", "Better not tell you now", "Don't count on it", "My reply is no", "My sources say no", "Outlook not so good", "Very doubtful"];
-			bot.sendMessage(msg, "🎱 " + responses[Math.floor(Math.random() * (responses.length))]);
+			bot.sendMessage(msg, ":8ball: " + responses[Math.floor(Math.random() * (responses.length))]);
 		}
 	},
 	"anime": {
@@ -641,7 +642,7 @@ var commands = {
 							if (!msg.channel.isPrivate) {
 								if (synopsis.length > 400) { synopsis = synopsis.substring(0, 400); synopsis += "..."; }
 							}
-							bot.sendMessage(msg, "**" + title + " / " + english + "**\n**Type:** " + type + " **| Episodes:** " + ep + " **| Status:** " + status + " **| Score:** " + score + "\n" + synopsis + "\n**www.myanimelist.net/anime/" + id + "**");
+							bot.sendMessage(msg, ":tv: " + "**" + title + " / " + english + "**\n**Type:** " + type + " **| Episodes:** " + ep + " **| Status:** " + status + " **| Score:** " + score + "\n" + synopsis + "\n**http://www.myanimelist.net/anime/" + id + "**");
 						});
 					} else bot.sendMessage(msg, "\"" + suffix + "\" not found. Blame the MAL search API", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
 				});
@@ -680,7 +681,7 @@ var commands = {
 							if (!msg.channel.isPrivate) {
 								if (synopsis.length > 400) { synopsis = synopsis.substring(0, 400); }
 							}
-							bot.sendMessage(msg, "**" + title + " / " + english + "**\n**Type:** " + type + " **| Chapters:** " + chapters + " **| Volumes: **" + volumes + " **| Status:** " + status + " **| Score:** " + score + "\n" + synopsis + "\n**www.myanimelist.net/manga/" + id + "**");
+							bot.sendMessage(msg, ":notebook_with_decorative_cover: **" + title + " / " + english + "**\n**Type:** " + type + " **| Chapters:** " + chapters + " **| Volumes: **" + volumes + " **| Status:** " + status + " **| Score:** " + score + "\n" + synopsis + "\n**http://www.myanimelist.net/manga/" + id + "**");
 						});
 					} else bot.sendMessage(msg, "\"" + suffix + "\" not found", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
 				});
@@ -813,9 +814,9 @@ var commands = {
 		cooldown: 2,
 		process: function(bot, msg) {
 			var choice = Math.floor(Math.random() * 3);
-			if (choice == 0) bot.sendMessage(msg, "I picked **rock**");
-			else if (choice == 1) bot.sendMessage(msg, "I picked **paper**");
-			else if (choice == 2) bot.sendMessage(msg, "I picked **scissors**");
+			if (choice == 0) bot.sendMessage(msg, "I picked **rock** :black_circle:");
+			else if (choice == 1) bot.sendMessage(msg, "I picked **paper** :scroll:");
+			else if (choice == 2) bot.sendMessage(msg, "I picked **scissors** :scissors:");
 		}
 	},
 	"weather": {
@@ -854,7 +855,7 @@ var commands = {
 			if (!suffix) { bot.sendMessage(msg, "**http://www.lmgtfy.com/?q=bot-chan+commands**"); return; }
 			suffix = suffix.split(" ");
 			for (var i = 0; i < suffix.length; i++) { suffix[i] = encodeURIComponent(suffix[i]); }
-			bot.sendMessage(msg, "🔍 **http://www.lmgtfy.com/?q=" + suffix.join("+") + "**");
+			bot.sendMessage(msg, ":mag_right: **http://www.lmgtfy.com/?q=" + suffix.join("+") + "**");
 		}
 	},
 	"numberfacts": {
@@ -870,7 +871,7 @@ var commands = {
 				else if (response.statusCode != 200) bot.sendMessage(msg, "Got status code " + response.statusCode, function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 10000}); });
 				else {
 					body = JSON.parse(body);
-					bot.sendMessage(msg, body.text);
+					bot.sendMessage(msg, ":1234: " + body.text);
 				}
 			});
 		}
@@ -999,7 +1000,7 @@ var commands = {
 		process: function(bot, msg, suffix) {
 			if (!suffix) //catch if empty
 			{
-				bot.sendMessage(msg.channel, "Insert URL please! E.g. http://yourwebsite.com/rss");
+				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss");
 				}
 			else
 			{
