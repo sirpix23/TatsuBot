@@ -5,7 +5,6 @@ var request = require("request");
 var xml2js = require("xml2js");
 var osuapi = require("osu-api");
 var ent = require("entities");
-var waifus = require("./waifus.json");
 var db = require("./db.js");
 
 var VoteDB = {}
@@ -98,12 +97,12 @@ Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide
 \*****************************/
 
 var aliases = {
-	"h": "help", "commands": "help",
+	"th": "tatsuhelp", "tatsucommands": "tatsuhelp",
 	"server": "botserver",
 	"backwards": "reverse",
 	"myid": "id",
 	"p": "ping",
-	"j": "join", "joins": "join",
+	/*"j": "join", "joins": "join",*/
 	"i": "info",
 	"a": "avatar",
 	"pick": "choose", "c": "choose",
@@ -115,23 +114,20 @@ var aliases = {
 	"g": "google", "lmgtfy": "google",
 	"number": "numberfacts", "num": "numberfacts",
 	"cat": "catfacts", "meow": "catfacts", "neko": "catfacts",
-	"r": "ratewaifu", "rate": "ratewaifu", "waifu": "ratewaifu",
 	"imgur": "image", "im": "image"
 };
 
 var commands = {
-	"help": {
+	"tatsuhelp": {
 		desc: "Sends a DM containing all of the commands. If a command is specified gives info on that command.",
 		usage: "[command]",
 		deleteCommand: true, shouldDisplay: false, cooldown: 1,
 		process: function(bot, msg, suffix) {
 			var toSend = [];
 			if (!suffix) {
-				toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.");
-				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "help`.");
-				toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");
-				toSend.push("**Commands:**\n");
-				toSend.push("`@" + bot.user.username + " text`\n		Talk to the bot (cleverbot)");
+				toSend.push("Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.");
+				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.");
+				toSend.push("**:information_source: Commands:**\n");
 				Object.keys(commands).forEach(cmd=>{
 					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
 						if (commands[cmd].shouldDisplay) toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
@@ -155,10 +151,10 @@ var commands = {
 			}
 		}
 	},
-	"botserver": {
-		desc: "Get a link to the BrussellBot / Bot-chan server.",
+	"tatsuserver": {
+		desc: "Get a link to the **Friday Night Gaming Club** Discordserver.",
 		cooldown: 10, usage: "",
-		process: function(bot, msg) { bot.sendMessage(msg, "Here's an invite to my server: **https://discord.gg/0kvLlwb7slG3XCCQ**"); }
+		process: function(bot, msg) { bot.sendMessage(msg, "My main server is here: **https://discord.gg/0jiPgpPH9wpNLFj7**"); }
 	},
 	"reverse": {
 		desc: "Returns the input backwards",
@@ -192,7 +188,8 @@ var commands = {
 			} else if (n === 5) { bot.sendMessage(msg, config.command_prefix + "ping", (e,sentMsg)=>{bot.updateMessage(sentMsg, "ping    |    Time taken: " + (sentMsg.timestamp - msg.timestamp) + "ms")}); }
 		}
 	},
-	"join": {
+	/*
+	"tatsujoin": {
 		desc: "Accepts an invite.",
 		usage: "<invite link(s)> [-a (announce presence)]",
 		deleteCommand: true,
@@ -212,7 +209,7 @@ var commands = {
 								bot.sendMessage(msg, "I'm already in that server!");
 							} else {
 								if (config.banned_server_ids && config.banned_server_ids.indexOf(server.id) > -1) {
-									console.log(colors.cRed("Joined server but it was on the ban list") + ": " + server.name);
+									console.log(colors.cRed("Joined server but it was on the ban list!") + ": " + server.name);
 									bot.sendMessage(msg, "This server is on the ban list");
 									bot.leaveServer(server);
 									return;
@@ -223,9 +220,9 @@ var commands = {
 								if (suffix.indexOf("-a") != -1) {
 									var toSend = [];
 									toSend.push("Hi! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "** and I was invited to this server by " + msg.author.username.replace(/@/g, '@\u200b') + ".");
-									toSend.push("Use `" + config.command_prefix + "help` to get a list of normal commands.");
-									toSend.push("Mod/Admin commands __including bot settings__ can be viewed with `" + config.mod_command_prefix + "help`");
-									toSend.push("For help / feedback / bugs / testing / announcements / changelogs / etc. go to **https://discord.gg/0kvLlwb7slG3XCCQ**");
+									toSend.push("Use `" + config.command_prefix + "tatsuhelp` to get a list of normal commands.");
+									toSend.push("Mod/Admin commands __including bot settings__ can be viewed with `" + config.mod_command_prefix + "tatsuhelp`");
+									toSend.push("Complain / Find out more about me here: **https://discord.gg/0kvLlwb7slG3XCCQ**");
 									bot.sendMessage(server.defaultChannel, toSend);
 								} else setTimeout(function() { bot.sendMessage(server.defaultChannel, "*Joined on request of " + msg.author.username.replace(/@/g, '@\u200b') + "*"); }, 2000);
 							}
@@ -235,11 +232,12 @@ var commands = {
 			} else correctUsage("join", this.usage, msg, bot);
 		}
 	},
-	"about": {
+	*/
+	"tatsuabout": {
 		desc: "About me",
 		deleteCommand: true, cooldown: 10, usage: "",
 		process: function(bot, msg) {
-			bot.sendMessage(msg, "__Author:__ Brussell\n__Library:__ Discord.js\n__Version:__ " + version + "\n__Official Server:__ https://discord.gg/0kvLlwb7slG3XCCQ\n__Info and Commands:__  http://brussell98.github.io/bot/main.html");
+			bot.sendMessage(msg, ":id:I'm Tatsu-chan!\n__My Artist:__ Foneza\n__My Authors:__ Brussell, David, Edgar, Henry\n__Library:__ Discord.js\n__Version:__ " + version + "\n__I reside on:__ https://discord.gg/0kvLlwb7slG3XCCQ\n__Info and Commands:__ Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
 		}
 	},
 	"dice": {
@@ -854,6 +852,7 @@ var commands = {
 			});
 		}
 	},
+	/*
 	"ratewaifu": {
 		desc: "I'll rate your waifu",
 		usage: "<name> [--s[earch]]",
@@ -897,6 +896,7 @@ var commands = {
 			}
 		}
 	},
+	*/
 	"shared": {
 		desc: "Get a list of servers that the bot sees a user in.",
 		usage: "<user>",
