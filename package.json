@@ -1,15 +1,15 @@
 {
-	"name": "brussellbot",
-	"version": "2.0.0",
-	"description": "A Discord bot that does everything",
+	"name": "TatsuBot",
+	"version": "1.0.0",
+	"description": "A Discord bot that does everything. Based off BrussellBot by Brussell98",
 	"author": "brussell98",
 	"main": "BrussellBot.js",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/brussell98/BrussellBot"
+		"url": "https://github.com/davidlimjh/TatsuBot"
 	},
 	"bugs": {
-		"url": "https://github.com/brussell98/BrussellBot/issues"
+		"url": "https://github.com/davidlimjh/TatsuBot/issues"
 	},
 	"engines": {
 		"node": ">=5.7.0"
@@ -22,10 +22,14 @@
 		"discord.js": "hydrabolt/discord.js#indev",
 		"request": "*",
 		"xml2js": "*",
-		"cleverbot-node": "*",
 		"osu-api": "*",
 		"chalk": "*",
 		"entities": ">=1.1.1",
-		"winston": ">=2.2.0"
+		"winston": ">=2.2.0",
+		"sax": ">=1.2.1"
+		"readable-stream": ">=2.0.5"
+		"node-array-indexofobject": "danmactough/node-array-indexofobject#master"
+		"addressparser": ">=1.0.1"
+		"feedparser": ">=1.1.4"
 	}
 }
