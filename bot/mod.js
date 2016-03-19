@@ -35,12 +35,12 @@ Commands
 */
 
 var aliases = {
-	"h": "help", "commands": "help",
+	"h": "tatsuhelp", "commands": "help",
 	"s": "stats", "stat": "stats", "status": "stats",
 	"play": "playing",
 	"c": "clean",
 	"p": "prune",
-	"l": "leave", "leaves": "leave",
+	/*"l": "leave", "leaves": "leave",*/
 	"a": "announce", "ann": "announce",
 	"change": "changelog", "logs": "changelog", "changelogs": "changelog",
 	"rolec": "color", "rolecolor": "color",
@@ -56,9 +56,9 @@ var commands = {
 		process: function(bot, msg, suffix) {
 			var toSend = [];
 			if (!suffix) {
-				toSend.push("Use `" + config.mod_command_prefix + "help <command name>` to get more info on a command.");
-				toSend.push("Normal commands can be found using `" + config.command_prefix + "help`.");
-				toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");
+				toSend.push("Use `" + config.mod_command_prefix + "tatsuhelp <command name>` to get more info on a command.");
+				toSend.push("Normal commands can be found using `" + config.command_prefix + "tatsuhelp`.");
+				/*toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");*/
 				toSend.push("**Commands:**\n");
 				Object.keys(commands).forEach(cmd=>{
 					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
@@ -79,7 +79,7 @@ var commands = {
 			}
 		}
 	},
-	"stats": {
+	"tatsustats": {
 		desc: "Get the stats of the bot",
 		usage: "", cooldown: 30, deleteCommand: true,
 		process: function(bot, msg) {
@@ -87,16 +87,16 @@ var commands = {
 				var toSend = [];
 				toSend.push("```");
 				toSend.push("Uptime: " + (Math.round(bot.uptime / (1000 * 60 * 60))) + " hours and " + (Math.round(bot.uptime / (1000 * 60)) % 60) + " minutes");
-				toSend.push("Connected to " + bot.servers.length + " servers with " + bot.channels.length + " channels and " + bot.users.length + " users.");
+				toSend.push("I am connected to " + bot.servers.length + " servers with " + bot.channels.length + " channels and " + bot.users.length + " users.");
 				toSend.push("Memory Usage: " + Math.round(process.memoryUsage().rss / 1024 / 1000) + "MB");
-				toSend.push("Running BrussellBot v" + version);
-				toSend.push("Commands this session: " + commandsProcessed + " + " + talkedToTimes + " cleverbot (avg " + ((commandsProcessed + talkedToTimes) / (bot.uptime / (1000 * 60))).toFixed(2) + "/min)");
+				toSend.push("Running TatsuBot v" + version);
+				/*toSend.push("Commands this session: " + commandsProcessed + " + " + talkedToTimes + " cleverbot (avg " + ((commandsProcessed + talkedToTimes) / (bot.uptime / (1000 * 60))).toFixed(2) + "/min)");*/
 				toSend.push("```");
 				bot.sendMessage(msg, toSend);
 			} else { bot.sendMessage(msg, "Only server admins/mods can do this.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); }
 		}
 	},
-	"playing": {
+	"tatsuplaying": {
 		desc: "Allows the bot owner to set the game.",
 		usage: "[game]", cooldown: 10, shouldDisplay: false, deleteCommand: true,
 		process: function(bot, msg, suffix) {
@@ -273,7 +273,8 @@ var commands = {
 			} else correctUsage("unmute", this.usage, msg, bot);
 		}
 	},
-	"leave": {
+	/*
+	"tatsuleave": {
 		desc: "Leaves the server.",
 		usage: "", deleteCommand: true,
 		process: function(bot, msg) {
@@ -289,6 +290,7 @@ var commands = {
 			} else { bot.sendMessage(msg, "⚠ I can't leave a DM.", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 8000}); }); }
 		}
 	},
+	*/
 	"announce": {
 		desc: "Send a PM to all users in a server. Admin only",
 		deleteCommand: false, usage: "<message>", cooldown: 1,
@@ -341,7 +343,7 @@ var commands = {
 			}
 		}
 	},
-	"changelog": {
+	/*"changelog": {
 		desc: "See recent changes to the bot",
 		deleteCommand: true, usage: "", cooldown: 30,
 		process: function(bot, msg) {
@@ -359,7 +361,7 @@ var commands = {
 				});
 			}
 		}
-	},
+	},*/
 	"color": {
 		desc: "Change a role's color",
 		usage: "<role name> <color in hex>",
