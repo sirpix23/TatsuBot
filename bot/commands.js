@@ -1011,7 +1011,49 @@ var commands = {
 				
 			
 		}
-	}
+	},
+    "rss_sub": {
+		desc: "PLACEHOLDER RSSFeed - Subscribe this channel to a specified RSS",
+		usage: "<rss_url>",
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+            if (!suffix) //catch if empty
+			{
+				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss");
+			}
+			else
+			{
+				var url = suffix;
+				bot.sendMessage(msg.channel, "TODO: Suscribing to "+url+" for channel "+msg.channel.name);
+				//loadFeed(bot, msg, url, 1);
+			}
+		}
+	},
+    "rss_unsub": {
+		desc: "PLACEHOLDER RSSFeed - Unsuscribe this channel from an existing RSS",
+		usage: "<existing id>",
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+            if (!suffix) //catch if empty
+			{
+				bot.sendMessage(msg.channel, ":newspaper: Specify an ID please! Use rss_list to find out a list of feeds subscribed on this channeL!");
+			}
+			else
+			{
+				var idx = suffix;
+				bot.sendMessage(msg.channel, "TODO: Unsuscribing rss @ "+idx+" from "+msg.channel.name);
+				//loadFeed(bot, msg, url, 1);
+			}
+		}
+	},
+    "rss_list": {
+		desc: "PLACEHOLDER RSSFeed - Lists all subscribed RSS feeds on this channel",
+		usage: "",
+		cooldown: 4,
+		process: function(bot, msg) {
+			bot.sendMessage(msg.channel, "TODO: Listing available rsses for "+msg.channel.name);				
+		}
+    }
 };
 
 exports.commands = commands;
