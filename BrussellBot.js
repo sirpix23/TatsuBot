@@ -6,7 +6,7 @@ var config = require("./bot/config.json");
 var games = require("./bot/games.json");
 var versioncheck = require("./bot/versioncheck.js");
 var discord = require("discord.js");
-var cleverbot = require("./bot/cleverbot.js").cleverbot;
+/*var cleverbot = require("./bot/cleverbot.js").cleverbot;*/
 var colors = require("./bot/styles.js");
 var db = require("./bot/db.js");
 checkConfig();
@@ -45,11 +45,11 @@ bot.on("message", msg => {
 	if (msg.channel.isPrivate && /^(help|how do I use this\??)$/i.test(msg.content)) commands.commands["help"].process(bot, msg);
 	if (msg.author.id == config.admin_id && msg.content.startsWith("(eval) ")) { evaluateString(msg); return; } //bot owner eval command
 	if (msg.mentions.length !== 0 && !msg.channel.isPrivate) {
-		if (msg.isMentioned(bot.user) && msg.content.startsWith("<@" + bot.user.id + ">")) {
+		/*if (msg.isMentioned(bot.user) && msg.content.startsWith("<@" + bot.user.id + ">")) {
 			if (ServerSettings.hasOwnProperty(msg.channel.server.id)) { if (ServerSettings[msg.channel.server.id].ignore.indexOf(msg.channel.id) === -1) {
 				cleverbot(bot, msg); talkedToTimes += 1;
 			}} else { cleverbot(bot, msg); talkedToTimes += 1; }
-		}
+		}*/
 		if (msg.content.indexOf("<@" + config.admin_id + ">") > -1) {
 			if (config.send_mentions) {
 				var owner = bot.users.get("id", config.admin_id);
@@ -247,8 +247,8 @@ function reload() {
 	delete require.cache[require.resolve(__dirname + "/bot/styles.js")];
 	colors = require(__dirname + "/bot/styles.js");
 	delete require.cache[require.resolve(__dirname + "/bot/cleverbot.js")];
-	cleverbot = require(__dirname + "/bot/cleverbot").cleverbot;
-	delete require.cache[require.resolve(__dirname + "/bot/db.js")];
+	/*cleverbot = require(__dirname + "/bot/cleverbot").cleverbot;
+	delete require.cache[require.resolve(__dirname + "/bot/db.js")];*/
 	db = require(__dirname + "/bot/db.js");
 	console.log(colors.cBgGreen(" Module Reload ") + " Success");
 }
