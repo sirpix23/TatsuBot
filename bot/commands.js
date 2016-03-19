@@ -92,6 +92,44 @@ function generateJSONRating(fullName) {
 	return score;
 }
 
+function loadFeed(bot, msg, url, limit){
+	//this function parses the url given from !rss suffix
+	var feed = require("feedparser");
+	var request = require("request");
+	var fparse = new feed();
+	
+	//tell the parser which URL to parse
+	request(url).pipe(fparse);
+	
+	//catch if URL cannot be read
+	fparse.on('error', function(error){
+		bot.sendMessage(msg.channel, "Feed error, contact an admin");
+		console.log(error);
+	});
+	
+	//start parsing
+	var shown = 0; //this will keep track of how many post have been shown already
+	fparse.on('readable', function(){
+		var stream = this;
+		shown += 1;
+		if(shown > limit){
+		return;
+		}
+		var item = stream.read();
+		bot.sendMessage(msg.channel,item.pubdate);
+		//console.log("new prevDate: "+prevDate);
+		bot.sendMessage(msg.channel,item.title + " - " + item.link, function() {
+                var text = htmlToText.fromString(item.description,{
+                    wordwrap:false,
+                    ignoreHref:true
+                });
+                bot.sendMessage(msg.channel,text);
+				
+        });
+	});
+	//thanks chalda for this function (https://github.com/chalda)
+}
+
 /*****************************\
 Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide for how to make new ones)
 \*****************************/
@@ -114,7 +152,8 @@ var aliases = {
 	"g": "google", "lmgtfy": "google",
 	"number": "numberfacts", "num": "numberfacts",
 	"cat": "catfacts", "meow": "catfacts", "neko": "catfacts",
-	"imgur": "image", "im": "image"
+	"imgur": "image", "im": "image",
+	"feed": "rss", "stream":"rss"
 };
 
 var commands = {
@@ -950,6 +989,26 @@ var commands = {
 					}
 				});
 			} else correctUsage("image", this.usage, msg, bot);
+		}
+	},
+	"rss": {
+		desc: "Gets the latest news with your input URL",
+		usage: "<url>",
+		deleteCommand: true,
+		cooldown: 2,
+		process: function(bot, msg, suffix) {
+			if (!suffix) //catch if empty
+			{
+				bot.sendMessage(msg.channel, "Insert URL please! E.g. http://yourwebsite.com/rss");
+				}
+			else
+			{
+				var url = suffix;
+				bot.sendMessage(msg.channel, "Loading rss for "+url);
+				loadFeed(bot, msg, url, 1);
+				}
+				
+			
 		}
 	}
 };
