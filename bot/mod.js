@@ -59,7 +59,7 @@ var commands = {
 				toSend.push("Use `" + config.mod_command_prefix + "tatsuhelp <command name>` to get more info on a command.");
 				toSend.push("Normal commands can be found using `" + config.command_prefix + "tatsuhelp`.");
 				/*toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");*/
-				toSend.push("**Commands:**\n");
+				toSend.push(":a::information_source::**Commands:**\n");
 				Object.keys(commands).forEach(cmd=>{
 					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
 						if (commands[cmd].shouldDisplay) toSend.push("`" + config.mod_command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
