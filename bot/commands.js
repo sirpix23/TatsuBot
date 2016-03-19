@@ -191,7 +191,7 @@ var commands = {
 		}
 	},
 	"tatsuserver": {
-		desc: "Get a link to the **Friday Night Gaming Club** Discordserver.",
+		desc: "Get a link to the **Friday Night Gaming Club** Discord server.",
 		cooldown: 10, usage: "",
 		process: function(bot, msg) { bot.sendMessage(msg, "My main server is here: **https://discord.gg/0jiPgpPH9wpNLFj7**"); }
 	},
@@ -820,7 +820,7 @@ var commands = {
 	},
 	"weather": {
 		desc: "Get the weather",
-		usage: "<City/City,Us> or <zip/zip,us>	example: ]weather 12345,us",
+		usage: "<City/City,Us> or <zip/zip,us>	example: !weather 12345,us",
 		deleteCommand: true,
 		cooldown: 7,
 		process: function(bot, msg, suffix) {
