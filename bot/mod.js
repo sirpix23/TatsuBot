@@ -40,7 +40,7 @@ var aliases = {
 	"play": "playing",
 	"c": "clean",
 	"p": "prune",
-	/*"l": "leave", "leaves": "leave",*/
+	"l": "leave", "leaves": "leave",
 	"a": "announce", "ann": "announce",
 	"change": "changelog", "logs": "changelog", "changelogs": "changelog",
 	"rolec": "color", "rolecolor": "color",
@@ -58,6 +58,7 @@ var commands = {
 			if (!suffix) {
 				toSend.push("Use `" + config.mod_command_prefix + "tatsuhelp <command name>` to get more info on a command.");
 				toSend.push("Normal commands can be found using `" + config.command_prefix + "tatsuhelp`.");
+				//Need our own site for commands too
 				/*toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");*/
 				toSend.push(":a::information_source::**Commands:**\n");
 				Object.keys(commands).forEach(cmd=>{
@@ -273,7 +274,6 @@ var commands = {
 			} else correctUsage("unmute", this.usage, msg, bot);
 		}
 	},
-	/*
 	"tatsuleave": {
 		desc: "Leaves the server.",
 		usage: "", deleteCommand: true,
@@ -290,7 +290,6 @@ var commands = {
 			} else { bot.sendMessage(msg, "⚠ I can't leave a DM.", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 8000}); }); }
 		}
 	},
-	*/
 	"announce": {
 		desc: "Send a PM to all users in a server. Admin only",
 		deleteCommand: false, usage: "<message>", cooldown: 1,
@@ -343,7 +342,9 @@ var commands = {
 			}
 		}
 	},
-	/*"changelog": {
+	//Gotta get changelog channel set up first
+	/*
+	"changelog": {
 		desc: "See recent changes to the bot",
 		deleteCommand: true, usage: "", cooldown: 30,
 		process: function(bot, msg) {
@@ -361,7 +362,8 @@ var commands = {
 				});
 			}
 		}
-	},*/
+	},
+	*/
 	"color": {
 		desc: "Change a role's color",
 		usage: "<role name> <color in hex>",
