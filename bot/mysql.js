@@ -2,6 +2,8 @@ var mysql = require('mysql');
 var mysql_settings = require('../db/mysql_settings.json');
 checkConfig();
 
+var mysql_conn = null;
+
 function checkConfig() {
 	if (mysql_settings.db_type === null) { console.log(colors.cWarn(" WARN ") + "DBType not specified. Defaulting to 'mysql'"); mysql_settings.db_type = 'mysql'; }
 	if (mysql_settings.db_host === null) { console.log(colors.cWarn(" WARN ") + "DBHost not defined. Defaulting to 'localhost'"); mysql_settings.db_host = 'localhost'; }
@@ -11,15 +13,18 @@ function checkConfig() {
     if (mysql_settings.db_dbname === null) { console.log(colors.cWarn(" WARN ") + "Database not defined. Please check your settings"); }
 }
 
-exports.testDb = function(callback) {
-   var mysql_conn = mysql.createConnection({
+function createConnection() {
+    mysql_conn = mysql.createConnection({
         host: mysql_settings.db_host,
         port: mysql_settings.db_port,
         user: mysql_settings.db_username,
         password: mysql_settings.db_password,
         database: mysql_settings.db_dbname
     });
-    
+}
+
+exports.testDb = function(callback) {
+    createConnection();
     //EXECUTE EVERYTHING, THEN CALLBACK THE FUNCTION IF AN ERROR HAPPENS
     mysql_conn.connect(function(err) {
         //IF ERROR
@@ -39,4 +44,18 @@ exports.testDb = function(callback) {
         //FINALLY, CALL THE CALLBACK OF THE TESTDB FUNCTION WITH THE SUCCESS CODE PASSED IN
         callback(testresult);
     });
+};
+
+//queries
+exports.query = function(sqlquery, sqlitems, callback) {
+    createConnection();
+    var sqlescaped = [];
+    sqlitems.forEach(function(element,index,array){
+        sqlescaped.push(mysql_conn.escape(element));
+    });  
+    
+    var query = mysql_conn.query(sqlquery, sqlescaped, function (error, results, fields) {
+        callback(error, results, fields);
+    });
+    console.log('Last SQL: '+query.sql);
 };

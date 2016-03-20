@@ -7,6 +7,7 @@ var osuapi = require("osu-api");
 var ent = require("entities");
 var db = require("./db.js");
 var mysql_db = require("./mysql.js");
+var async = require("async");
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -131,6 +132,73 @@ function loadFeed(bot, msg, url, limit){
 	//thanks chalda for this function (https://github.com/chalda)
 }
 
+function checkValidFeed(bot, msg, url, callback)
+{
+    var feed = require("feedparser");
+	var request = require("request");
+	var fparse = new feed();
+    
+    if(url.substring(0,7) === "http://")    //noninclusive of last chara!
+    {
+        //tell the parser which URL to parse
+        request(url).pipe(fparse);
+        
+        //catch if URL cannot be read
+        fparse.on('error', function(error){
+            callback(false);
+        });
+        
+        fparse.on('readable', function(){
+            callback(true);
+        });
+    }
+	else{
+        bot.sendMessage(msg.channel, "Please append http:// to your url!");
+        callback(false);
+    }
+	
+}
+
+function displayHelpHeader(bot, msg)
+{
+    var header = [
+                "Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.",
+                "Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.",
+                "**:information_source: Commands:**\n"
+            ];
+    bot.sendMessage(msg.author, header);
+    console.log("inside displayhelpheader");
+}
+
+function displayHelp(bot, msg, callback)
+{
+    var toSend = [];
+    var counter = 0;
+    Object.keys(commands).forEach(cmd=>{
+            if(counter > 9)
+            {
+                bot.sendMessage(msg.author, toSend);
+                toSend = [];
+                counter = 0;
+                console.log("flush");
+            }
+            
+            if (commands[cmd].hasOwnProperty("shouldDisplay"))
+            {
+                if (commands[cmd].shouldDisplay) toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
+            }
+            else
+            {
+                toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
+            }
+            counter++;
+        }
+    );
+    console.log("inside displayhelp");
+    displayHelpHeader(bot, msg);
+    callback(toSend);
+}
+
 /*****************************\
 Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide for how to make new ones)
 \*****************************/
@@ -162,23 +230,44 @@ var commands = {
 	"tatsuhelp": {
 		desc: "Sends a DM containing all of the commands. If a command is specified gives info on that command.",
 		usage: "[command]",
-		deleteCommand: true, shouldDisplay: false, cooldown: 1,
+		deleteCommand: true, shouldDisplay: false, cooldown: 5,
 		process: function(bot, msg, suffix) {
 			var toSend = [];
 			if (!suffix) {
-				toSend.push("Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.");
-				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.");
-				toSend.push("**:information_source: Commands:**\n");
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
+                Object.keys(commands).forEach(function(cmd,index,array)
+                {
+                    if (commands[cmd].hasOwnProperty("shouldDisplay")) {
 						if (commands[cmd].shouldDisplay) toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
 					} else toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
-				});
-				var helpMessage = toSend.join("\n");
-				var helpPart2 = helpMessage.substring(helpMessage.indexOf("`]lotto`"));
-				var helpPart1 = helpMessage.substring(0, helpMessage.indexOf("`]lotto`") - 1);
-				bot.sendMessage(msg.author, helpPart1);
-				bot.sendMessage(msg.author, helpPart2);
+                });
+                
+                async.waterfall([
+                    function sendHeader(done)
+                    {
+                        var headers = [];
+                        headers.push("Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.");
+                        headers.push("Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.");
+                        /*toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");*/
+                        headers.push("**:information_source: Commands:**\n");
+                        bot.sendMessage(msg.author, headers).then(msg => done(null));
+                        console.log("header sent");
+                    },
+                    function sendBody(done)
+                    {
+                        while(toSend.length / 10 > 0)
+                        {
+                            var temp = toSend.slice(0, 10);
+                            bot.sendMessage(msg.author, temp.join('\n'));
+                            toSend.splice(0, 10);
+                        }
+                        var temp = toSend.slice(0, toSend.length);
+                        bot.sendMessage(msg.author, temp);
+                        console.log("body sent");
+                        done(null);
+                    }
+                ], function(err, res){
+                        console.log("done sent");
+                    });
 			} else {
 				suffix = suffix.trim().toLowerCase();
 				if (commands.hasOwnProperty(suffix)) {
@@ -1002,15 +1091,13 @@ var commands = {
 			if (!suffix) //catch if empty
 			{
 				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss");
-				}
+			}
 			else
 			{
 				var url = suffix;
 				bot.sendMessage(msg.channel, "Loading rss for "+url);
 				loadFeed(bot, msg, url, 1);
-				}
-				
-			
+			}
 		}
 	},
     "rss_sub": {
@@ -1025,8 +1112,54 @@ var commands = {
 			else
 			{
 				var url = suffix;
-				bot.sendMessage(msg.channel, "TODO: Suscribing to "+url+" for channel "+msg.channel.name);
-				//loadFeed(bot, msg, url, 1);
+				//bot.sendMessage(msg.channel, "TODO: Suscribing to "+url+" for channel "+msg.channel.name);
+                //SANITY CHECK 1, PERFORM CHECK TO SEE IF XML ALREADY EXISTS IN LIST
+                mysql_db.query('SELECT * FROM rss_feeds WHERE feed_url = ? AND channel_id = ?', [url, msg.channel.id], function(err, results, fields){
+                    if(err)
+                    {
+                        console.error('DB Error!: ' + err.stack);
+                    }
+                    else
+                    {
+                        if(results.length >= 1)
+                        {
+                            bot.sendMessage(msg.channel, "Error, this feed has already been suscribed to in this channel!");
+                            console.log('results.length: '+results.length);
+                            return;
+                        }
+                        else
+                        {
+                            //SANITY CHECK 2, CHECK VALIDITY OF LINK
+                            checkValidFeed(bot, msg, url, function(res) {
+                                if(!res)
+                                {
+                                    bot.sendMessage(msg.channel, "Error, this feed is invalid! Please verify and try again in awhile!");
+                                    return;
+                                }
+                                else
+                                {
+                                    //PREPARE INSERT STATEMENT!
+                                    var values = [url, msg.channel.id, msg.channel.name, msg.author.id, msg.author.name];
+                                    values.forEach(function(element,index,array){
+                                        console.log(element);
+                                    })
+                                    mysql_db.query('INSERT INTO rss_feeds (feed_url, channel_id, channel_name, user_sub_id, user_sub_name) VALUES (?,?,?,?,?)', values, function(err, results){
+                                        if(err)
+                                        {
+                                            console.error('DB Error!: ' + err.stack);
+                                        }
+                                        else
+                                        {
+                                            //TODO
+                                            bot.sendMessage(msg.channel, "TODO: Suscribing to "+url+" for channel "+msg.channel.name);
+                                            //bot.sendMessage(msg.channel, "Success! affected rows: " + results.affectedRows);                       
+                                        }
+                                    });
+                                }
+                            } );
+                        }
+                    }
+                });
 			}
 		}
 	},
@@ -1052,8 +1185,24 @@ var commands = {
 		usage: "",
 		cooldown: 4,
 		process: function(bot, msg) {
-			bot.sendMessage(msg.channel, "TODO: Listing available rsses for "+msg.channel.name);				
-		}
+            var toSend = [];
+            mysql_db.query('SELECT * FROM rss_feeds WHERE channel_id = ?', [msg.channel.id], function(err, results, fields){
+                 if(err)
+                {
+                    console.error('DB Error!: ' + err.stack);
+                }
+                else
+                {
+                    toSend.push(":point: RSS Feeds subscribed for channel **"+msg.channel.name+"**");
+                    results.forEach(function(element,index,array){
+                        toSend.push(":black_small_square: "+element['feed_title']+" - "+element['feed_url']+" | Subscribed by: **"+element['user_sub_name']+"**");
+                    });
+                    bot.sendMessage(msg.channel, toSend);
+                }
+            });
+			//bot.sendMessage(msg.channel, "TODO: Listing available rsses for "+msg.channel.name);
+            //mysql_db.query('SELECT * FROM ?? WHERE ?? = ?', []
+        }
     },
     //DO NOT REMOVE THIS FUNCTION! THIS IS A GOOD FUCKING LEARNING POINT FOR ASYNCHRONOUS OPERATIONS
     //FUCK JS THREADING NONSENSE
@@ -1068,6 +1217,69 @@ var commands = {
             //WHEN EVERYHTING IN TESTDB EXECUTES, CALL THIS FUNCTION (CALLBACK) TO FINALLY OUTPUT THE RESULT
             mysql_db.testDb( function(res){ bot.sendMessage(msg.channel, "DBConn: "+res+"! Check console for info") } );
 		}
+    },
+    "util_chaninfo": {
+        desc: "Utility - Channel Info",
+        usage: "",
+		cooldown: 4,
+        deleteCommand: true,
+        shouldDisplay: false,
+		process: function(bot, msg) {
+            var toSend = [];
+            toSend.push('ChanName: ', msg.channel.name);
+            toSend.push('ChanId: ', msg.channel.id);
+            toSend.push('ChanDesc: ', msg.channel.description);
+            toSend.push('ServerId: ', msg.channel.server.id);
+            toSend.push('ServerName: ', msg.channel.server.name);
+            bot.sendMessage(msg.channel, toSend);
+        }
+    },
+    "ratefegt": {
+        desc: "Rate this user's fegt level the Tatsubot way",
+        usage: "[user]",
+		cooldown: 4,
+        deleteCommand: true,
+		process: function(bot, msg, suffix) {
+            if (!suffix) //catch if empty
+			{
+				bot.sendMessage(msg.channel, "Don't be a baka "+msg.author.name+"! Please specify a user!");
+			}
+            else
+            {
+                var rating = Math.floor((Math.random() * 100));
+                var toSend = [];
+                if(rating == 0)
+                {
+                    toSend.push("Tatsu-chan believes **"+suffix+"** is attempting to hack the fegt detector ("+rating+"%)");
+                }
+                else if(rating < 10)
+                {
+                    toSend.push("Tatsu-chan thinks that **"+suffix+"** may have mild tendencies of being a fegt ("+rating+"%)");
+                }
+                else if(rating < 30)
+                {
+                    toSend.push("Tatsu-chan senses the fegt in **"+suffix+"** ("+rating+"%)");
+                }
+                else if(rating < 50)
+                {
+                    toSend.push("Tatsu-chan calculates that the inner fegt in **"+suffix+"** has not completely taken over ("+rating+"%)");
+                }
+                else if(rating < 70)
+                {
+                    toSend.push("Tatsu-chan advises to don protective gear as **"+suffix+"** is infected with fegt ("+rating+"%)");
+                }
+                else if(rating < 90)
+                {
+                    toSend.push("Tatsu-chan is evacuating at least several internets away from the fegtness of **"+suffix+"** and you should too ("+rating+"%)");
+                }
+                else
+                {
+                    toSend.push("Tatsu-chan has lost all hope in humanity for **"+suffix+"**. He/She has turned into a pure fegt! ("+rating+"%)");
+                }
+                
+                bot.sendMessage(msg.channel, toSend);
+            }
+        }
     }
 };
 
