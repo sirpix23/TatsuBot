@@ -209,7 +209,7 @@ var aliases = {
 	"backwards": "reverse",
 	"myid": "id",
 	"p": "tatsuping",
-	/*"j": "join", "joins": "join",*/
+	"j": "join", "joins": "join",
 	"i": "info",
 	"a": "avatar",
 	"pick": "choose", "c": "choose",
@@ -318,7 +318,7 @@ var commands = {
 			} else if (n === 5) { bot.sendMessage(msg, config.command_prefix + "ping", (e,sentMsg)=>{bot.updateMessage(sentMsg, "ping    |    Time taken: " + (sentMsg.timestamp - msg.timestamp) + "ms")}); }
 		}
 	},
-	/*
+	
 	"tatsujoin": {
 		desc: "Accepts an invite.",
 		usage: "<invite link(s)> [-a (announce presence)]",
@@ -340,7 +340,7 @@ var commands = {
 							} else {
 								if (config.banned_server_ids && config.banned_server_ids.indexOf(server.id) > -1) {
 									console.log(colors.cRed("Joined server but it was on the ban list!") + ": " + server.name);
-									bot.sendMessage(msg, "This server is on the ban list");
+									bot.sendMessage(msg, "Sorry! This server is on the ban list!");
 									bot.leaveServer(server);
 									return;
 								}
@@ -352,7 +352,7 @@ var commands = {
 									toSend.push("Hi! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "** and I was invited to this server by " + msg.author.username.replace(/@/g, '@\u200b') + ".");
 									toSend.push("Use `" + config.command_prefix + "tatsuhelp` to get a list of normal commands.");
 									toSend.push("Mod/Admin commands __including bot settings__ can be viewed with `" + config.mod_command_prefix + "tatsuhelp`");
-									toSend.push("Complain / Find out more about me here: **https://discord.gg/0kvLlwb7slG3XCCQ**");
+									toSend.push("Complain / Find out more about me here: **https://discord.gg/0jiPgpPH9wnl4EV3**");
 									bot.sendMessage(server.defaultChannel, toSend);
 								} else setTimeout(function() { bot.sendMessage(server.defaultChannel, "*Joined on request of " + msg.author.username.replace(/@/g, '@\u200b') + "*"); }, 2000);
 							}
@@ -362,12 +362,11 @@ var commands = {
 			} else correctUsage("join", this.usage, msg, bot);
 		}
 	},
-	*/
 	"tatsuabout": {
 		desc: "About me",
 		deleteCommand: true, cooldown: 10, usage: "",
 		process: function(bot, msg) {
-			bot.sendMessage(msg, ":id: **Hello, I'm Tatsu-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **I reside in:** https://discord.gg/0jiPgpPH9wpNLFj7\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
+			bot.sendMessage(msg, ":id: **Hello, I'm Tatsu-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **I reside in:** https://discord.gg/0jiPgpPH9wqb0klr\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
 		}
 	},
 	"dice": {
@@ -982,6 +981,7 @@ var commands = {
 			});
 		}
 	},
+	//No waifu votes yet
 	/*
 	"ratewaifu": {
 		desc: "I'll rate your waifu",
@@ -1082,6 +1082,8 @@ var commands = {
 			} else correctUsage("image", this.usage, msg, bot);
 		}
 	},
+	//Old RSS feed test command
+	/*
 	"rss": {
 		desc: "Gets the latest news with your input URL",
 		usage: "<url>",
@@ -1099,6 +1101,7 @@ var commands = {
 				loadFeed(bot, msg, url, 1);
 			}
 		}
+<<<<<<< HEAD
 	},
     "rss_sub": {
 		desc: "PLACEHOLDER RSSFeed - Subscribe this channel to a specified RSS",
@@ -1281,6 +1284,10 @@ var commands = {
             }
         }
     }
+=======
+	}
+	*/
+>>>>>>> 3e4f5fa0033250bdae982b9efa884cd321c8b17a
 };
 
 exports.commands = commands;
