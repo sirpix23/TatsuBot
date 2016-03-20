@@ -6,6 +6,7 @@ var xml2js = require("xml2js");
 var osuapi = require("osu-api");
 var ent = require("entities");
 var db = require("./db.js");
+var mysql_db = require("./mysql.js");
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -1052,6 +1053,20 @@ var commands = {
 		cooldown: 4,
 		process: function(bot, msg) {
 			bot.sendMessage(msg.channel, "TODO: Listing available rsses for "+msg.channel.name);				
+		}
+    },
+    //DO NOT REMOVE THIS FUNCTION! THIS IS A GOOD FUCKING LEARNING POINT FOR ASYNCHRONOUS OPERATIONS
+    //FUCK JS THREADING NONSENSE
+    "dbtest": {
+		desc: "DBTest",
+		usage: "",
+		cooldown: 4,
+        deleteCommand: true,
+        shouldDisplay: false,
+		process: function(bot, msg) {
+            //PASS A FUNCTION THAT REQUIRES THE SUCCESS AS AN ARGUMENT
+            //WHEN EVERYHTING IN TESTDB EXECUTES, CALL THIS FUNCTION (CALLBACK) TO FINALLY OUTPUT THE RESULT
+            mysql_db.testDb( function(res){ bot.sendMessage(msg.channel, "DBConn: "+res+"! Check console for info") } );
 		}
     }
 };
