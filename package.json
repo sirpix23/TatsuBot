@@ -1,6 +1,6 @@
 {
 	"name": "TatsuBot",
-	"version": "1.0.0",
+	"version": "1.4.0",
 	"description": "A Discord bot that does everything. Based off BrussellBot by Brussell98",
 	"author": "brussell98",
 	"main": "BrussellBot.js",
