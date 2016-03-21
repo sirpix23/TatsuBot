@@ -158,47 +158,6 @@ function checkValidFeed(bot, msg, url, callback)
     }
 	
 }
-
-function displayHelpHeader(bot, msg)
-{
-    var header = [
-                "Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.",
-                "Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.",
-                "**:information_source: Commands:**\n"
-            ];
-    bot.sendMessage(msg.author, header);
-    console.log("inside displayhelpheader");
-}
-
-function displayHelp(bot, msg, callback)
-{
-    var toSend = [];
-    var counter = 0;
-    Object.keys(commands).forEach(cmd=>{
-            if(counter > 9)
-            {
-                bot.sendMessage(msg.author, toSend);
-                toSend = [];
-                counter = 0;
-                console.log("flush");
-            }
-            
-            if (commands[cmd].hasOwnProperty("shouldDisplay"))
-            {
-                if (commands[cmd].shouldDisplay) toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
-            }
-            else
-            {
-                toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
-            }
-            counter++;
-        }
-    );
-    console.log("inside displayhelp");
-    displayHelpHeader(bot, msg);
-    callback(toSend);
-}
-
 /*****************************\
 Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide for how to make new ones)
 \*****************************/
@@ -241,6 +200,9 @@ var commands = {
 					} else toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
                 });
                 
+                //required for proper? formatting of help message because
+                //sendMessage packets seem to not arrive in sequence, ending up jumbling our help message! wtf manz
+                //pagination added too so word limit for 1 message wont exceed
                 async.waterfall([
                     function sendHeader(done)
                     {
@@ -318,7 +280,6 @@ var commands = {
 			} else if (n === 5) { bot.sendMessage(msg, config.command_prefix + "ping", (e,sentMsg)=>{bot.updateMessage(sentMsg, "ping    |    Time taken: " + (sentMsg.timestamp - msg.timestamp) + "ms")}); }
 		}
 	},
-	
 	"tatsujoin": {
 		desc: "Accepts an invite.",
 		usage: "<invite link(s)> [-a (announce presence)]",
@@ -981,7 +942,6 @@ var commands = {
 			});
 		}
 	},
-	//No waifu votes yet
 	/*
 	"ratewaifu": {
 		desc: "I'll rate your waifu",
@@ -1082,8 +1042,6 @@ var commands = {
 			} else correctUsage("image", this.usage, msg, bot);
 		}
 	},
-	//Old RSS feed test command
-	/*
 	"rss": {
 		desc: "Gets the latest news with your input URL",
 		usage: "<url>",
@@ -1101,7 +1059,6 @@ var commands = {
 				loadFeed(bot, msg, url, 1);
 			}
 		}
-<<<<<<< HEAD
 	},
     "rss_sub": {
 		desc: "PLACEHOLDER RSSFeed - Subscribe this channel to a specified RSS",
@@ -1284,10 +1241,6 @@ var commands = {
             }
         }
     }
-=======
-	}
-	*/
->>>>>>> 3e4f5fa0033250bdae982b9efa884cd321c8b17a
 };
 
 exports.commands = commands;
