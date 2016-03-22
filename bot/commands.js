@@ -15,6 +15,7 @@ const OSU_API_KEY = config.osu_api_key;
 const OWM_API_KEY = config.weather_api_key;
 const MAL_USER = config.mal_user;
 const MAL_PASS = config.mal_pass;
+const YOURLS_SIG_TOKEN = config.yourls_sig_token;
 
 /*****************************\
 		   Functions
@@ -136,7 +137,6 @@ Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide
 
 var aliases = {
 	"th": "tatsuhelp", "tatsucommands": "tatsuhelp",
-	/*"server": "botserver",*/
 	"backwards": "reverse",
 	"myid": "id",
 	"p": "tatsuping",
@@ -154,7 +154,8 @@ var aliases = {
 	"cat": "catfacts", "meow": "catfacts", "neko": "catfacts",
 	"imgur": "image", "im": "image",
 	"feed": "rss", "stream":"rss",
-	"tatsu": "tatsuabout"
+	"tatsu": "tatsuabout",
+	"short": "shorten", "shrt": "shorten"
 };
 
 var commands = {
@@ -993,7 +994,6 @@ var commands = {
 		}
 	},
 	//Old RSS feed test command
-	/*
 	"rss": {
 		desc: "Gets the latest news with your input URL",
 		usage: "<url>",
@@ -1013,8 +1013,29 @@ var commands = {
 				
 			
 		}
+	},
+	"shorten": {
+		desc: "Shorten links with http://frid.li Friday Night Link Shortener",
+		usage: "<URL to Shorten, (Optional) Vanity Shortened URL> example: !shorten http://www.friday.cafe,fngshorturl",
+		deleteCommand: true,
+		cooldown: 7,
+		process: function(bot, msg, suffix) {
+			
+			if (YOURLS_SIG_TOKEN == null || YOURLS_SIG_TOKEN == "") { bot.sendMessage(msg, "⚠ No Yourls signature token defined by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+			if (suffix) suffix = suffix.split(" ");
+			else { correctUsage("shorten", this.usage, msg, bot); return; }
+			var reqURL = (/([^\s])/.test(suffix[1]) == false) ? "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&format=json" : "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&keyword=" + suffix[1] + "&format=json";
+			request(reqURL, function(error, response, body) {
+				if (!error && response.statusCode == 200) {
+					body = JSON.parse(body);
+					var linkKeyword = body.url.keyword;
+					//Send Message
+					bot.sendMessage(msg.author, ":page_facing_up: Hi! Your shortened URL is: http://frid.li/" + body.url.keyword);
+					bot.sendMessage(msg, msg.author + " your shortened URL has been sent to your inbox!");
+				} else console.log(error);
+			});
+		}
 	}
-	*/
 };
 
 exports.commands = commands;
