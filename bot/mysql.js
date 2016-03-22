@@ -46,16 +46,11 @@ exports.testDb = function(callback) {
     });
 };
 
-//queries
 exports.query = function(sqlquery, sqlitems, callback) {
     createConnection();
-    var sqlescaped = [];
-    sqlitems.forEach(function(element,index,array){
-        sqlescaped.push(mysql_conn.escape(element));
-    });  
-    
-    var query = mysql_conn.query(sqlquery, sqlescaped, function (error, results, fields) {
+    var query = mysql_conn.query(sqlquery, sqlitems, function (error, results, fields) {
         callback(error, results, fields);
     });
-    console.log('Last SQL: '+query.sql);
+    mysql_conn.end(function(err) {});
+    //console.log('Last SQL: '+query.sql);
 };

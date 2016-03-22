@@ -1,4 +1,5 @@
 var config = require("./config.json");
+var rss_config = require("./rss_settings.json");
 var version = require("../package.json").version;
 var colors = require("./styles.js");
 var request = require("request");
@@ -6,6 +7,7 @@ var xml2js = require("xml2js");
 var osuapi = require("osu-api");
 var ent = require("entities");
 var db = require("./db.js");
+var mysql = require("mysql");
 var mysql_db = require("./mysql.js");
 var async = require("async");
 
@@ -131,33 +133,6 @@ function loadFeed(bot, msg, url, limit){
 	});
 	//thanks chalda for this function (https://github.com/chalda)
 }
-
-function checkValidFeed(bot, msg, url, callback)
-{
-    var feed = require("feedparser");
-	var request = require("request");
-	var fparse = new feed();
-    
-    if(url.substring(0,7) === "http://")    //noninclusive of last chara!
-    {
-        //tell the parser which URL to parse
-        request(url).pipe(fparse);
-        
-        //catch if URL cannot be read
-        fparse.on('error', function(error){
-            callback(false);
-        });
-        
-        fparse.on('readable', function(){
-            callback(true);
-        });
-    }
-	else{
-        bot.sendMessage(msg.channel, "Please append http:// to your url!");
-        callback(false);
-    }
-	
-}
 /*****************************\
 Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide for how to make new ones)
 \*****************************/
@@ -212,7 +187,8 @@ var commands = {
                         /*toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");*/
                         headers.push("**:information_source: Commands:**\n");
                         bot.sendMessage(msg.author, headers).then(msg => done(null));
-                        console.log("header sent");
+                        //console.log("header sent");
+                        return;
                     },
                     function sendBody(done)
                     {
@@ -224,11 +200,13 @@ var commands = {
                         }
                         var temp = toSend.slice(0, toSend.length);
                         bot.sendMessage(msg.author, temp);
-                        console.log("body sent");
+                        //console.log("body sent");
                         done(null);
+                        return;
                     }
                 ], function(err, res){
-                        console.log("done sent");
+                        //console.log("done sent");
+                        return;
                     });
 			} else {
 				suffix = suffix.trim().toLowerCase();
@@ -1072,71 +1050,161 @@ var commands = {
 			else
 			{
 				var url = suffix;
-				//bot.sendMessage(msg.channel, "TODO: Suscribing to "+url+" for channel "+msg.channel.name);
-                //SANITY CHECK 1, PERFORM CHECK TO SEE IF XML ALREADY EXISTS IN LIST
-                mysql_db.query('SELECT * FROM rss_feeds WHERE feed_url = ? AND channel_id = ?', [url, msg.channel.id], function(err, results, fields){
-                    if(err)
+                //recode using async control flow
+                async.waterfall([
+                    function doQuery(done)
                     {
-                        console.error('DB Error!: ' + err.stack);
-                    }
-                    else
-                    {
-                        if(results.length >= 1)
-                        {
-                            bot.sendMessage(msg.channel, "Error, this feed has already been suscribed to in this channel!");
-                            console.log('results.length: '+results.length);
-                            return;
-                        }
-                        else
-                        {
-                            //SANITY CHECK 2, CHECK VALIDITY OF LINK
-                            checkValidFeed(bot, msg, url, function(res) {
-                                if(!res)
+                        mysql_db.query('SELECT * FROM rss_feeds WHERE feed_url = ? AND channel_id = ? AND server_id = ?', [mysql.escape(url), msg.channel.id, msg.channel.server.id], function(err, results, fields){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                if(results.length >= 1)
                                 {
-                                    bot.sendMessage(msg.channel, "Error, this feed is invalid! Please verify and try again in awhile!");
+                                    bot.sendMessage(msg.channel, "Error, this feed has already been suscribed to in this channel!");
+                                    //done(null, true);
+                                    done(new Error("Feed has already been subscribed!"));
                                     return;
                                 }
-                                else
-                                {
-                                    //PREPARE INSERT STATEMENT!
-                                    var values = [url, msg.channel.id, msg.channel.name, msg.author.id, msg.author.name];
-                                    values.forEach(function(element,index,array){
-                                        console.log(element);
-                                    })
-                                    mysql_db.query('INSERT INTO rss_feeds (feed_url, channel_id, channel_name, user_sub_id, user_sub_name) VALUES (?,?,?,?,?)', values, function(err, results){
-                                        if(err)
-                                        {
-                                            console.error('DB Error!: ' + err.stack);
-                                        }
-                                        else
-                                        {
-                                            //TODO
-                                            bot.sendMessage(msg.channel, "TODO: Suscribing to "+url+" for channel "+msg.channel.name);
-                                            //bot.sendMessage(msg.channel, "Success! affected rows: " + results.affectedRows);                       
-                                        }
-                                    });
-                                }
-                            } );
+                                
+                                //feed does not exist
+                                done(null);
+                                return;
+                            }
+                        });
+                    },
+                    function checkValidFeed(done)
+                    {
+                        var feed = require("feedparser");
+                        var request = require("request");
+                        var fparse = new feed();
+                        
+                        if(url.substring(0,7) === "http://")    //noninclusive of last chara!
+                        {
+                            //tell the parser which URL to parse
+                            request(url).pipe(fparse);
+                            
+                            //catch if URL cannot be read
+                            fparse.on('error', function(error){
+                                bot.sendMessage(msg.channel, "Error, not a valid feed!");
+                                done(new Error(error.message));
+                                return;
+                            });
+                            
+                            fparse.on('readable', function(){
+                                done(null, this.meta.title);
+                                return;
+                            });
                         }
-                    }
-                });
+                        else{
+                            bot.sendMessage(msg.channel, "Error, Please append http:// to your url!");
+                            done(new Error("Feed URL is malformed!"));
+                            return;
+                        }
+                        
+                    },
+                    function doInsert(rss_title, done)
+                    {
+                        //PREPARE INSERT STATEMENT!
+                        var values = [mysql.escape(url), rss_title, msg.channel.id, msg.channel.name, msg.channel.server.id, msg.channel.server.name, msg.author.id, msg.author.name];
+                        /*
+                        values.forEach(function(element,index,array){
+                            console.log(element);
+                        })*/
+                        mysql_db.query('INSERT INTO rss_feeds (feed_url, feed_title, channel_id, channel_name, server_id, server_name, user_sub_id, user_sub_name) VALUES (?,?,?,?,?,?,?,?)', values, function(err, results){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                done(null, [rss_title, url]);
+                            }
+                        });
+                        return;
+                    }],
+                    function(err, res){
+                        if(!err) bot.sendMessage(msg.channel, "Suscribing to "+res[0]+" - "+res[1]+" for channel "+msg.channel.name);
+                        else{
+                            console.log(err.message);
+                        }
+                        return;
+                    });
 			}
 		}
 	},
     "rss_unsub": {
 		desc: "PLACEHOLDER RSSFeed - Unsuscribe this channel from an existing RSS",
-		usage: "<existing id>",
+		usage: "<url>",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
             if (!suffix) //catch if empty
 			{
-				bot.sendMessage(msg.channel, ":newspaper: Specify an ID please! Use rss_list to find out a list of feeds subscribed on this channeL!");
+				bot.sendMessage(msg.channel, ":newspaper: Specify a URL please! Use rss_list to find out a list of feeds (and their corresponding URLs) subscribed on this channeL!");
 			}
 			else
 			{
-				var idx = suffix;
-				bot.sendMessage(msg.channel, "TODO: Unsuscribing rss @ "+idx+" from "+msg.channel.name);
-				//loadFeed(bot, msg, url, 1);
+				var url = suffix;
+				async.waterfall([
+                    function doQuery(done)
+                    {
+                        mysql_db.query('SELECT * FROM rss_feeds WHERE feed_url = ? AND channel_id = ? AND server_id = ?', [mysql.escape(url), msg.channel.id, msg.channel.server.id], function(err, results, fields){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                if(results.length < 1)
+                                {
+                                    bot.sendMessage(msg.channel, "Error, this feed is not suscribed to in this channel!");
+                                    //done(null, true);
+                                    done(new Error("Feed is not subscribed to!"));
+                                    return;
+                                }
+                                //feed exists
+                                done(null, results[0].feed_title);
+                                return;
+                            }
+                        });
+                    },
+                    function doDelete(rss_title, done)
+                    {
+                        //PREPARE DELETE STATEMENT!
+                        var values = [mysql.escape(url), msg.channel.id, msg.channel.server.id];
+                        /*
+                        values.forEach(function(element,index,array){
+                            console.log(element);
+                        })*/
+                        mysql_db.query('DELETE FROM rss_feeds WHERE feed_url = ? AND channel_id = ? AND server_id = ?', values, function(err, results){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                done(null, rss_title);
+                            }
+                        });
+                        return;
+                    }],
+                    function(err, res){
+                        if(!err) bot.sendMessage(msg.channel, "Unsuscribed from **"+res+"** - "+url+" for channel "+msg.channel.name);
+                        else{
+                            console.log(err.message);
+                        }
+                        return;
+                    });
 			}
 		}
 	},
@@ -1146,22 +1214,20 @@ var commands = {
 		cooldown: 4,
 		process: function(bot, msg) {
             var toSend = [];
-            mysql_db.query('SELECT * FROM rss_feeds WHERE channel_id = ?', [msg.channel.id], function(err, results, fields){
+            mysql_db.query('SELECT * FROM rss_feeds WHERE channel_id = ? AND server_id = ?', [msg.channel.id, msg.channel.server.id], function(err, results, fields){
                  if(err)
                 {
                     console.error('DB Error!: ' + err.stack);
                 }
                 else
                 {
-                    toSend.push(":point: RSS Feeds subscribed for channel **"+msg.channel.name+"**");
+                    toSend.push(":eight_pointed_black_star: RSS Feeds subscribed for channel **"+msg.channel.name+"** in server **"+msg.channel.server.name+"**");
                     results.forEach(function(element,index,array){
                         toSend.push(":black_small_square: "+element['feed_title']+" - "+element['feed_url']+" | Subscribed by: **"+element['user_sub_name']+"**");
                     });
                     bot.sendMessage(msg.channel, toSend);
                 }
             });
-			//bot.sendMessage(msg.channel, "TODO: Listing available rsses for "+msg.channel.name);
-            //mysql_db.query('SELECT * FROM ?? WHERE ?? = ?', []
         }
     },
     //DO NOT REMOVE THIS FUNCTION! THIS IS A GOOD FUCKING LEARNING POINT FOR ASYNCHRONOUS OPERATIONS
@@ -1245,3 +1311,94 @@ var commands = {
 
 exports.commands = commands;
 exports.aliases = aliases;
+
+//update RSS
+if(rss_config.update_enable)
+{
+        setInterval(() => {
+        console.log("[RSSFeed] Beginning Update loop");
+        async.waterfall([
+            function getUniqueUrls(done)
+            {
+                var url_array = [];
+                //GET UNIQUE URLS FOR PULLING RSSES FROM, WE DO NOT WANT TO PULL MULTIPLE OF THE SAME!
+                mysql_db.query("SELECT DISTINCT feed_url FROM rss_feeds",null,function(err, results, fields){
+                    if(err)
+                    {
+                        console.error('DB Error!: ' + err.stack);
+                    }
+                    else
+                    {
+                        results.forEach(function(element,index,array){
+                            url_array.push(element.feed_url);
+                            //console.log(element);
+                        });
+                        done(null, url_array);
+                        return;
+                    }
+                });
+            },
+            function doGetSubChans(urls, done)
+            {
+                var chan_dict = {}; //dict, note the {} and not []
+                //console.log(urls.length);
+                //async flow is required because of stupid forEach
+                //do note that since all urls are being processed together, the sequence will not be guaranteed
+                //however we don't require a sequence, just the relationship between a URL and its subbed channels
+                
+                //process each url at the same time but keeping synchronous flow per url
+                async.each(urls, function(url, done){
+                    //perform select query for this url
+                    mysql_db.query("SELECT channel_id, server_id FROM rss_feeds WHERE feed_url = ?",url,function(err, results, fields){
+                        if(err)
+                        {
+                            console.error('DB Error!: ' + err.stack);
+                        }
+                        else
+                        {
+                            var chan_list = [];
+                            //process each result at the same time but keeping synchronous flow per result
+                            async.each(results, function(channel, done)
+                            {
+                                //form a single string of server_id|channel_id and push it to the list
+                                chan_list.push(channel.server_id + "|" + channel.channel_id);
+                                //end our synchronous loop for this result
+                                done();
+                                return;
+                            },function(err){
+                                //we have processed all our results! we should have all the ids for this url!
+                                //if(!err) console.log('channels for url: ' + chan_list.length);
+                            });
+                            //finally, set the list as value for the dict using the url as its key
+                            chan_dict[url] = chan_list;
+                            //end our synchronous loop for this url
+                            done();
+                            return;
+                        }
+                    });
+                },function(err){
+                    //we have processed all our urls! we should have the complete dict now!
+                    if(!err)
+                    {
+                        //console.log('urls processed: ' + Object.keys(chan_dict).length);
+                        //pass this dict object over to the next function for processing within this waterfall
+                        done(null, chan_dict);
+                        return;
+                    }
+                });
+                return;
+            }/*,
+            function doUpdateRSS(chan_dict, done)
+            {
+                
+            }*/
+        ],function(err,res){
+            if(!err){
+                console.log(res);
+                console.log("[RSSFeed] Done loop, entries: "+Object.keys(res).length);
+            }
+        });
+        
+    }, rss_config.update_duration);
+}
+
