@@ -15,5 +15,6 @@
 	"weather_api_key": "",
 	"osu_api_key": "",
 	"imgur_client_id": "",
+	"yourls_sig_token": "",
 	"banned_server_ids": [""]
 }
