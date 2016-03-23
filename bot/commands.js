@@ -1018,21 +1018,50 @@ var commands = {
 		desc: "Shorten links with http://frid.li Friday Night Link Shortener",
 		usage: "<URL to Shorten, (Optional) Vanity Shortened URL> example: !shorten http://www.friday.cafe,fngshorturl",
 		deleteCommand: true,
-		cooldown: 7,
+		cooldown: 30,
 		process: function(bot, msg, suffix) {
 			
 			if (YOURLS_SIG_TOKEN == null || YOURLS_SIG_TOKEN == "") { bot.sendMessage(msg, "⚠ No Yourls signature token defined by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 			if (suffix) suffix = suffix.split(" ");
 			else { correctUsage("shorten", this.usage, msg, bot); return; }
-			var reqURL = (/([^\s])/.test(suffix[1]) == false) ? "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&format=json" : "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&keyword=" + suffix[1] + "&format=json";
+			//Why doesnt this work? Need to figure out 
+			//var reqURL = (suffix[1] == undefined) ? "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&format=json" : "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&keyword=" + suffix[1] + "&format=json";
+				var urlPart = "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0];
+				
+			if (suffix[1] == undefined) {
+				var reqURL = urlPart + "&format=json";
+			}
+			else {
+				var reqURL = urlPart + "&keyword=" + suffix[1] + "&format=json";
+			}
 			request(reqURL, function(error, response, body) {
 				if (!error && response.statusCode == 200) {
 					body = JSON.parse(body);
-					var linkKeyword = body.url.keyword;
-					//Send Message
-					bot.sendMessage(msg.author, ":page_facing_up: Hi! Your shortened URL is: http://frid.li/" + body.url.keyword);
-					bot.sendMessage(msg, msg.author + " your shortened URL has been sent to your inbox!");
-				} else console.log(error);
+					//If link is new & does not contain reserved words
+					if (!body.hasOwnProperty("code")){
+						var linkKeyword = body.url.keyword;
+						//Send Message
+						bot.sendMessage(msg.author, ":page_facing_up: Hi! Your shortened URL is: http://frid.li/" + body.url.keyword);
+						bot.sendMessage(msg, ":page_facing_up:" + msg.author + " your shortened URL has been sent to your inbox!");
+					}
+					//If link already exists
+					else if (body.code == "error:url"){
+						var linkKeyword = body.url.keyword;
+						bot.sendMessage(msg, ":page_facing_up:" + msg.author + " your shortened URL has been sent to your inbox!");
+						bot.sendMessage(msg.author, "Your link already exists! Here it is: " + "http://frid.li/" + body.url.keyword);
+					}
+					//If link contains reserved words
+					else if (body.code == "error:keyword"){
+						bot.sendMessage(msg, "I'm afraid the keyword" + "\"" + suffix[1] + "\"" + " has already been used or is not allowed.");
+					}
+					else bot.sendMessage(msg, "I'm afraid something went wrong, please try again!");
+					
+				}	
+				//Not sure how to add timer for request cooldown
+				else{
+					bot.sendMessage(msg, "Too many link shorten requests in a short period, please try again in awhile!")
+					console.log(error);
+				} 
 			});
 		}
 	}
