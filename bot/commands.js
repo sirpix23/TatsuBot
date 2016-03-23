@@ -5,6 +5,7 @@ var request = require("request");
 var xml2js = require("xml2js");
 var osuapi = require("osu-api");
 var ent = require("entities");
+var waifus = require("./waifus.json");
 var db = require("./db.js");
 
 var VoteDB = {}
@@ -169,6 +170,7 @@ var commands = {
 				toSend.push("Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.");
 				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.");
 				toSend.push("**:information_source: Commands:**\n");
+				toSend.push("`@" + bot.user.username + " text`\n		Talk to the me! (cleverbot)");
 				Object.keys(commands).forEach(cmd=>{
 					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
 						if (commands[cmd].shouldDisplay) toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
@@ -892,8 +894,6 @@ var commands = {
 			});
 		}
 	},
-	//No waifu votes yet
-	/*
 	"ratewaifu": {
 		desc: "I'll rate your waifu",
 		usage: "<name> [--s[earch]]",
@@ -937,7 +937,6 @@ var commands = {
 			}
 		}
 	},
-	*/
 	"shared": {
 		desc: "Get a list of servers that the bot sees a user in.",
 		usage: "<user>",
@@ -1016,7 +1015,7 @@ var commands = {
 	},
 	"shorten": {
 		desc: "Shorten links with http://frid.li Friday Night Link Shortener",
-		usage: "<URL to Shorten, (Optional) Vanity Shortened URL> example: !shorten http://www.friday.cafe,fngshorturl",
+		usage: "<URL to Shorten, (Optional) Vanity Shortened URL> example: !shorten www.friday.cafe,fngshorturl",
 		deleteCommand: true,
 		cooldown: 30,
 		process: function(bot, msg, suffix) {
