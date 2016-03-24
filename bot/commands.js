@@ -68,12 +68,11 @@ function generateUserRating(bot, msg, fullName) {
 	var score = generateRandomRating() - 1;
 	var details = msg.channel.server.detailsOfUser(user);
 	if (details) {
-		var joined = new Date(details.joinedAt), now = new Date();
-		if (now.valueOf() - joined.valueOf() >= 2592000000) { score += 1; } //if user has been on the server for at least one month +1
+		if ((new Date().valueOf() - new Date(details.joinedAt).valueOf()) >= 2592000000) score += 1; //if user has been on the server for at least one month +1
 	}
 	if (msg.channel.permissionsOf(user).hasPermission("manageServer")) score += 1; //admins get +1 ;)
 	var count = 0;
-	bot.servers.map((server) => { if (server.members.get("id", user.id)) count += 1; }); //how many servers does the bot share with them
+	bot.servers.map(server=>{ if (server.members.indexOf(user)) count += 1; }); //how many servers does the bot share with them
 	if (count > 2) score += 1; //if we share at least 3 servers
 	if (!user.avatarURL) score -= 1; //gotta have an avatar
 	if (user.username.length > 22) score -= 1; //long usernames are hard to type so -1
@@ -160,8 +159,9 @@ var aliases = {
 	"feed": "rss", "stream":"rss",
 	"tatsu": "tatsuabout",
 	"r": "ratewaifu", "rate": "ratewaifu", "waifu": "ratewaifu",
-	"short": "shorten", "shrt": "shorten"
-	
+	"short": "shorten", "shrt": "shorten",
+	"imgur": "image", "im": "image",
+	"f": "fortune"
 };
 
 var commands = {
@@ -215,7 +215,7 @@ var commands = {
 			} else {
 				suffix = suffix.trim().toLowerCase();
 				if (commands.hasOwnProperty(suffix)) {
-					toSend.push("`" + config.command_prefix + suffix + commands[suffix].usage + "`");
+					toSend.push("`" + config.command_prefix + suffix + ' ' + commands[suffix].usage + "`");
 					if (commands[suffix].hasOwnProperty("info")) toSend.push(commands[suffix].info);
 					else if (commands[suffix].hasOwnProperty("desc")) toSend.push(commands[suffix].desc);
 					if (commands[suffix].hasOwnProperty("cooldown")) toSend.push("__Cooldown:__ " + commands[suffix].cooldown + " seconds");
@@ -251,6 +251,7 @@ var commands = {
 	},
 	"tatsuping": {
 		desc: "Replies with pong.",
+		info: "You can use this to check how long it take the bot to detect a message and respond.",
 		cooldown: 2, shouldDisplay: false, usage: "",
 		process: function(bot, msg) {
 			var n = Math.floor(Math.random() * 6);
@@ -265,7 +266,7 @@ var commands = {
 	"tatsujoin": {
 		desc: "Accepts an invite.",
 		usage: "<invite link(s)> [-a (announce presence)]",
-		deleteCommand: true,
+		deleteCommand: true, info: "You can pass multiple invite links at once.\nAdding `-a` to the end will show the normal join message.",
 		process: function(bot, msg, suffix) {
 			if (suffix) {
 				var invites = suffix.split(" ");
@@ -290,6 +291,7 @@ var commands = {
 								console.log(colors.cGreen("Joined server: ") + server.name);
 								bot.sendMessage(msg, "✅ Successfully joined ***" + server.name + "***");
 								db.addServer(server);
+								db.addServerToTimes(server);
 								if (suffix.indexOf("-a") != -1) {
 									var toSend = [];
 									toSend.push("Hi! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "** and I was invited to this server by " + msg.author.username.replace(/@/g, '@\u200b') + ".");
@@ -314,9 +316,9 @@ var commands = {
 	},
 	"dice": {
 		desc: "Roll dice. (1d6 by default)",
-		deleteCommand: true,
+		deleteCommand: true, cooldown: 3,
 		usage: "[(rolls)d(sides)]",
-		cooldown: 3,
+		info: "__Format:__ The first number is how many to roll. The second is the number of sides.",
 		process: function(bot, msg, suffix) {
 			var dice = (suffix && /\d+d\d+/.test(suffix)) ? suffix : "1d6";
 			request("https://rolz.org/api/?" + dice + ".json", function(err, response, body) {
@@ -345,8 +347,8 @@ var commands = {
 	"info": {
 		desc: "Gets info on the server or a user if mentioned.",
 		usage: "[username]",
-		deleteCommand: true,
-		cooldown: 10,
+		deleteCommand: true, cooldown: 10,
+		info: "If no suffix is provided it will get info on the server.\nIf a user is provided it will get info on them.\nSome stats include: roles, join date, avatar, members, region, and owner.",
 		process: function(bot, msg, suffix) {
 			if (!msg.channel.isPrivate) {
 				if (suffix) {
@@ -460,29 +462,23 @@ var commands = {
 	"choose": {
 		desc: "Makes a choice for you.",
 		usage: "<option 1>, <option 2>, [option], [option]",
-		cooldown: 4,
-		deleteCommand: false,
+		cooldown: 4, deleteCommand: false,
 		process: function(bot, msg, suffix) {
 			if (!suffix || /(.*), ?(.*)/.test(suffix) == false) { correctUsage("choose", this.usage, msg, bot); return; }
 			var choices = suffix.split(/, ?/);
 			if (choices.length < 2) correctUsage("choose", this.usage, msg, bot);
 			else {
-				var choice = 0;
-				if (choices.indexOf('homework') > -1 || choices.indexOf('hw') > -1) {
-					choice = (choices.indexOf('homework') > -1) ? choices.indexOf('homework') : choices.indexOf('hw');
-					bot.sendMessage(msg, "I chose **" + choices[choice] + "**");
-				} else {
-					choice = Math.floor(Math.random() * (choices.length));
-					bot.sendMessage(msg, "I chose **" + choices[choice].replace(/@/g, '@\u200b') + "** :point_left:");
-				}
+				var choice = Math.floor(Math.random() * (choices.length));
+				choices.forEach((c,i)=>{if (c.indexOf('homework') > -1 || c.indexOf('sleep') > -1) choice = i;});
+				bot.sendMessage(msg, "I chose **" + choices[choice].replace(/@/g, '@\u200b') + "**");
 			}
 		}
 	},
 	"lotto": {
 		desc: "Lottery picks a random entered user.",
 		usage: "end | enter | new [max entries] | <mentions to pick from> (pick from the users mentioned) | everyone",
-		deleteCommand: true,
-		cooldown: 2,
+		deleteCommand: true, cooldown: 2,
+		info: "__new__: Start a lottery with the specified number as the max entries per user.\n__mentions__: Pick from the mentioned users.\n__everyone__: Pick a random person on the server.",
 		process: function(bot, msg, suffix) {
 			var currentchannel = msg.channel.id;
 			if (msg.everyoneMentioned || suffix.toLowerCase() == "everyone") {
@@ -652,9 +648,8 @@ var commands = {
 		process: function(bot, msg, suffix) {
 			if (suffix) {
 				if (!MAL_USER || !MAL_PASS || MAL_USER == "" || MAL_PASS =="") { bot.sendMessage(msg, "MAL login not configured by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
-				if (/[\uD000-\uF8FF]/g.test(suffix)) { bot.sendMessage(msg, "Search cannot contain unicode characters.", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 				bot.startTyping(msg.channel);
-				var tags = suffix.split(" ").join("+");
+				var tags = ent.encodeHTML(suffix);
 				var rUrl = "http://myanimelist.net/api/anime/search.xml?q=" + tags;
 				request(rUrl, {"auth": {"user": MAL_USER, "pass": MAL_PASS, "sendImmediately": false}}, function(error, response, body) {
 					if (error) console.log(error);
@@ -690,9 +685,8 @@ var commands = {
 		process: function(bot, msg, suffix) {
 			if (suffix) {
 				if (!MAL_USER || !MAL_PASS || MAL_USER == "" || MAL_PASS =="") { bot.sendMessage(msg, "MAL login not configured by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
-				if (/[\uD000-\uF8FF]/g.test(suffix)) { bot.sendMessage(msg, "Search cannot contain unicode characters.", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 				bot.startTyping(msg.channel);
-				var tags = suffix.split(" ").join("+");
+				var tags = ent.encodeHTML(suffix);
 				var rUrl = "http://myanimelist.net/api/manga/search.xml?q=" + tags;
 				request(rUrl, {"auth": {"user": MAL_USER, "pass": MAL_PASS, "sendImmediately": false}}, function(error, response, body) {
 					if (error) console.log(error);
@@ -732,7 +726,7 @@ var commands = {
 	"osu": {
 		desc: "Commands to fetch osu! data.",
 		usage: "sig [username] [hex] | best [username] | user [username] | recent [username]",
-		info: "**sig:** Get an osu!next styled signature for the specified account. You may provide a hex color.\n**user:** Get the statistics for a user.\n**best:** Get the top 5 plays for a user (by PP).\n**user:** Get the 5 most recent plays for a user.",
+		info: "**sig:** Get an osu!next styled signature for the specified account. You may provide a hex color.\n**user:** Get the statistics for a user.\n**best:** Get the top 5 plays for a user (by PP).\n**recent:** Get the 5 most recent plays for a user.",
 		deleteCommand: true, cooldown: 5,
 		process: function(bot, msg, suffix) {
 			if (!suffix) { correctUsage("osu", this.usage, msg, bot); return; }
@@ -853,9 +847,9 @@ var commands = {
 	},
 	"weather": {
 		desc: "Get the weather",
-		usage: "<City/City,Us> or <zip/zip,us>	example: !weather 12345,us",
-		deleteCommand: true,
-		cooldown: 7,
+		usage: "<City/City,Us> or <zip/zip,us>",
+		deleteCommand: true, cooldown: 7,
+		info: "Formats: `London` `London,UK` `10016` `10016,NY`",
 		process: function(bot, msg, suffix) {
 			if (OWM_API_KEY == null || OWM_API_KEY == "") { bot.sendMessage(msg, "⚠ No API key defined by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 			if (suffix) suffix = suffix.replace(" ", "");
@@ -927,8 +921,7 @@ var commands = {
 	"ratewaifu": {
 		desc: "I'll rate your waifu",
 		usage: "<name> [--s[earch]]",
-		deleteCommand: false,
-		cooldown: 5,
+		deleteCommand: false, cooldown: 5,
 		process: function(bot, msg, suffix) {
 			if (!suffix) { correctUsage("ratewaifu", this.usage, msg, bot); return; }
 			if (msg.everyoneMentioned) { bot.sendMessage(msg, "Hey, " + msg.author.username.replace(/@/g, '@\u200b') + ", don't do that ok?", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
@@ -994,6 +987,7 @@ var commands = {
 		desc: "Get an image from Imgur",
 		usage: "<subreddit> [--nsfw] [--day | --week | --month | --year | --all]",
 		deleteCommand: false, cooldown: 10,
+		info: "Avalible parameters are:\n\t`--nsfw` for getting NSFW images\n\t`--month` or other ranges for time ranges",
 		process: function(bot, msg, suffix) {
 			if (!IMGUR_CLIENT_ID || IMGUR_CLIENT_ID == "") { bot.sendMessage(msg, "⚠ No API key defined by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 			if (/[\uD000-\uF8FF]/g.test(suffix)) { bot.sendMessage(msg, "Search cannot contain unicode characters.", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
@@ -1013,8 +1007,8 @@ var commands = {
 						if (body.hasOwnProperty("data") && body.data !== undefined && body.data.length !== 0) {
 							for (var i = 0; i < 100; i++) {
 								var toSend = body.data[Math.floor(Math.random() * (body.data.length))];
-								if (!sendNSFW && toSend.nsfw != true) { bot.sendMessage(msg, toSend.link); break; }
-								else if (sendNSFW && toSend.nsfw == true) { bot.sendMessage(msg, toSend.link + ' **(NSFW)**'); break; }
+								if (!sendNSFW && toSend.nsfw != true) { if (toSend.title) bot.sendMessage(msg, toSend.link + " " + toSend.title); else  + " " + bot.sendMessage(msg, toSend.link); break; }
+								else if (sendNSFW && toSend.nsfw == true) { if (toSend.title) bot.sendMessage(msg, toSend.link + " **(NSFW)** " + toSend.title); else  + " " + bot.sendMessage(msg, toSend.link + " **(NSFW)**"); break; }
 							}
 						} else bot.sendMessage(msg, "Nothing found!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); });
 					}
@@ -1042,7 +1036,7 @@ var commands = {
 		}
 	},
     "rss_sub": {
-		desc: "PLACEHOLDER RSSFeed - Subscribe this channel to a specified RSS",
+		desc: "RSSFeed - Subscribe this channel to a specified RSS",
 		usage: "<rss_url>",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
@@ -1143,7 +1137,7 @@ var commands = {
 		}
 	},
     "rss_unsub": {
-		desc: "PLACEHOLDER RSSFeed - Unsuscribe this channel from an existing RSS",
+		desc: "RSSFeed - Unsuscribe this channel from an existing RSS",
 		usage: "<url>",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
@@ -1212,7 +1206,7 @@ var commands = {
 		}
 	},
     "rss_list": {
-		desc: "PLACEHOLDER RSSFeed - Lists all subscribed RSS feeds on this channel",
+		desc: "RSSFeed - Lists all subscribed RSS feeds on this channel",
 		usage: "",
 		cooldown: 4,
 		process: function(bot, msg) {
@@ -1264,7 +1258,8 @@ var commands = {
         }
     },
     "ratefegt": {
-        desc: "Rate this user's fegt level the Tatsubot way",
+		shouldDisplay: false,
+        desc: "Tatsu-chan judges you.",
         usage: "[user]",
 		cooldown: 4,
         deleteCommand: true,
@@ -1279,11 +1274,11 @@ var commands = {
                 var toSend = [];
                 if(rating == 0)
                 {
-                    toSend.push("Tatsu-chan believes **"+suffix+"** is attempting to hack the fegt detector ("+rating+"%)");
+                    toSend.push("Tatsu-chan believes **"+suffix+"** will become a fegt soon enough ("+rating+"%)");
                 }
                 else if(rating < 10)
                 {
-                    toSend.push("Tatsu-chan thinks that **"+suffix+"** may have mild tendencies of being a fegt ("+rating+"%)");
+                    toSend.push("Tatsu-chan thinks that **"+suffix+"** may have mild fegt tendencies ("+rating+"%)");
                 }
                 else if(rating < 30)
                 {
@@ -1295,15 +1290,15 @@ var commands = {
                 }
                 else if(rating < 70)
                 {
-                    toSend.push("Tatsu-chan advises to don protective gear as **"+suffix+"** is infected with fegt ("+rating+"%)");
+                    toSend.push("Tatsu-chan advises donning protective gear! **"+suffix+"** is infected with fegt ("+rating+"%)");
                 }
                 else if(rating < 90)
                 {
-                    toSend.push("Tatsu-chan is evacuating at least several internets away from the fegtness of **"+suffix+"** and you should too ("+rating+"%)");
+                    toSend.push("Tatsu-chan is evacuating several internets away from **"+suffix+"**! ("+rating+"%)");
                 }
                 else
                 {
-                    toSend.push("Tatsu-chan has lost all hope in humanity for **"+suffix+"**. He/She has turned into a pure fegt! ("+rating+"%)");
+                    toSend.push("Tatsu-chan has lost all hope in humanity as **"+suffix+"** has turned into a pure fegt! ("+rating+"%)");
                 }
                 
                 bot.sendMessage(msg.channel, toSend);
@@ -1311,7 +1306,7 @@ var commands = {
         }
     },
 	"shorten": {
-		desc: "Shorten links with http://frid.li Friday Night Link Shortener",
+		desc: "Shorten links with www.frid.li Friday Night Link Shortener",
 		usage: "<URL to Shorten, (Optional) Vanity Shortened URL> example: !shorten www.friday.cafe,fngshorturl",
 		deleteCommand: true,
 		cooldown: 30,
@@ -1359,6 +1354,41 @@ var commands = {
 					console.log(error);
 				} 
 			});
+		}
+	},
+	"fortune": {
+		desc: "Get a fortune",
+		usage: "[category]",
+		info: "Get a fortune from `yerkee.com/api`.\nThe avalible categories are: all, computers, cookie, definitions, miscellaneous, people, platitudes, politics, science, and wisdom.",
+		deleteCommand: false,
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+			var cat = 'wisdom';
+			if (suffix && /^(all|computers|cookie|definitions|miscellaneous|people|platitudes|politics|science|wisdom)$/i.test(suffix.trim())) cat = suffix.trim();
+			request.get('http://www.yerkee.com/api/fortune/' + cat, (e, r, b)=>{
+				if (e) bot.sendMessage(msg, 'Got an error: ' + e);
+				else if (r.statusCode !== 200) bot.sendMessage(msg, 'Got status code '+ r.statusCode);
+				else {
+					b = JSON.parse(b);
+					if (b.hasOwnProperty('fortune') && b.fortune !== undefined) bot.sendMessage(msg, msg.author.username.replace(/@/g, '@\u200b') + ',\n' + b.fortune);
+					else bot.sendMessage(msg, 'No data was returned from the API');
+				}
+			})
+		}
+	},
+	"remindme": { shouldDisplay: false,
+		desc: "Set reminders.",
+		usage: "clear | list | <reminder> <[# days] [# hours] [# minutes]>",
+		info: "Comming Soon!",
+		deleteCommand: true, cooldown: 5,
+		process: function(bot, msg, suffix) {
+			if (/^clear \d$/i.test(suffix.trim())) {
+				console.log('Detected clear');
+			} else if (suffix.trim().toLowerCase() === 'list') {
+				console.log('detected list');
+			} else if (/^.* in ((\d|a|one|two|three) ?d[ays]*)?( and| &)? ?((\d\d?\d?|a|an|one|two|three) ?h[ours]*)?( and| &)? ?((\d\d?\d?|a|an|one|two|three) ?m[inutes]*)?( and| &)? ?((\d\d?\d?|a|an|one|two|three) ?s[econds]*)?$/i.test(suffix)) {
+				console.log('detected valid remind');
+			} else correctUsage("remindme", this.usage, msg, bot);
 		}
 	}
 };

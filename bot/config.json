@@ -9,12 +9,14 @@
 	"show_warn": false,
 	"admin_id": 95286900801146880,
 	"send_mentions": true,
+	"allow_user_games": false,
 	"mal_user": "",
 	"mal_pass": "",
-	"use_env": true,
+	"use_env": false,
 	"weather_api_key": "",
 	"osu_api_key": "",
 	"imgur_client_id": "",
 	"yourls_sig_token": "",
-	"banned_server_ids": [""]
+	"banned_server_ids": [""],
+	"whitelist": [""]
 }
