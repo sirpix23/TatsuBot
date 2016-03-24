@@ -156,7 +156,9 @@ var aliases = {
 	"imgur": "image", "im": "image",
 	"feed": "rss", "stream":"rss",
 	"tatsu": "tatsuabout",
+	"r": "ratewaifu", "rate": "ratewaifu", "waifu": "ratewaifu",
 	"short": "shorten", "shrt": "shorten"
+	
 };
 
 var commands = {
@@ -1025,13 +1027,13 @@ var commands = {
 			else { correctUsage("shorten", this.usage, msg, bot); return; }
 			//Why doesnt this work? Need to figure out 
 			//var reqURL = (suffix[1] == undefined) ? "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&format=json" : "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0] + "&keyword=" + suffix[1] + "&format=json";
-				var urlPart = "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&url=" + suffix[0];
+				var urlPart = "http://frid.li/yourls-api.php?signature=" + YOURLS_SIG_TOKEN + "&action=shorturl&format=json&url=" + encodeURIComponent(suffix[0]);
 				
 			if (suffix[1] == undefined) {
-				var reqURL = urlPart + "&format=json";
+				var reqURL = urlPart;
 			}
 			else {
-				var reqURL = urlPart + "&keyword=" + suffix[1] + "&format=json";
+				var reqURL = urlPart + "&keyword=" + "" + encodeURIComponent(suffix[1]);
 			}
 			request(reqURL, function(error, response, body) {
 				if (!error && response.statusCode == 200) {
