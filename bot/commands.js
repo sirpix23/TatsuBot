@@ -1,12 +1,16 @@
-var config = require("./config.json");
-var version = require("../package.json").version;
-var colors = require("./styles.js");
-var request = require("request");
-var xml2js = require("xml2js");
-var osuapi = require("osu-api");
-var ent = require("entities");
+var config = require("./config.json");              //config file for bot
+var version = require("../package.json").version;   //version
+var colors = require("./styles.js");                //textcolors
+var request = require("request");                   //html request
+var xml2js = require("xml2js");                     //xml to js library
+var osuapi = require("osu-api");                    //osu api lib
+var ent = require("entities")
 var waifus = require("./waifus.json");
+
 var db = require("./db.js");
+var mysql = require("mysql");                       //node-mysql lib
+var mysql_db = require("./mysql.js");               //mysql helper class
+var async = require("async");                       //node-async lib
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -131,7 +135,6 @@ function loadFeed(bot, msg, url, limit){
 	});
 	//thanks chalda for this function (https://github.com/chalda)
 }
-
 /*****************************\
 Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide for how to make new ones)
 \*****************************/
@@ -165,24 +168,50 @@ var commands = {
 	"tatsuhelp": {
 		desc: "Sends a DM containing all of the commands. If a command is specified gives info on that command.",
 		usage: "[command]",
-		deleteCommand: true, shouldDisplay: false, cooldown: 1,
+		deleteCommand: true, shouldDisplay: false, cooldown: 5,
 		process: function(bot, msg, suffix) {
 			var toSend = [];
 			if (!suffix) {
-				toSend.push("Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.");
-				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.");
-				toSend.push("**:information_source: Commands:**\n");
-				toSend.push("`@" + bot.user.username + " text`\n		Talk to the me! (cleverbot)");
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
+                Object.keys(commands).forEach(function(cmd,index,array)
+                {
+                    if (commands[cmd].hasOwnProperty("shouldDisplay")) {
 						if (commands[cmd].shouldDisplay) toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
 					} else toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
-				});
-				var helpMessage = toSend.join("\n");
-				var helpPart2 = helpMessage.substring(helpMessage.indexOf("`]lotto`"));
-				var helpPart1 = helpMessage.substring(0, helpMessage.indexOf("`]lotto`") - 1);
-				bot.sendMessage(msg.author, helpPart1);
-				bot.sendMessage(msg.author, helpPart2);
+                });
+                
+                //required for proper? formatting of help message because
+                //sendMessage packets seem to not arrive in sequence, ending up jumbling our help message! wtf manz
+                //pagination added too so word limit for 1 message wont exceed
+                async.waterfall([
+                    function sendHeader(done)
+                    {
+                        var headers = [];
+                        headers.push("Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.");
+                        headers.push("Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.");
+                        /*toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");*/
+                        headers.push("**:information_source: Commands:**\n");
+                        bot.sendMessage(msg.author, headers).then(msg => done(null));
+                        //console.log("header sent");
+                        return;
+                    },
+                    function sendBody(done)
+                    {
+                        while(toSend.length / 10 > 0)
+                        {
+                            var temp = toSend.slice(0, 10);
+                            bot.sendMessage(msg.author, temp.join('\n'));
+                            toSend.splice(0, 10);
+                        }
+                        var temp = toSend.slice(0, toSend.length);
+                        bot.sendMessage(msg.author, temp);
+                        //console.log("body sent");
+                        done(null);
+                        return;
+                    }
+                ], function(err, res){
+                        //console.log("done sent");
+                        return;
+                    });
 			} else {
 				suffix = suffix.trim().toLowerCase();
 				if (commands.hasOwnProperty(suffix)) {
@@ -233,7 +262,6 @@ var commands = {
 			} else if (n === 5) { bot.sendMessage(msg, config.command_prefix + "ping", (e,sentMsg)=>{bot.updateMessage(sentMsg, "ping    |    Time taken: " + (sentMsg.timestamp - msg.timestamp) + "ms")}); }
 		}
 	},
-	
 	"tatsujoin": {
 		desc: "Accepts an invite.",
 		usage: "<invite link(s)> [-a (announce presence)]",
@@ -1004,17 +1032,284 @@ var commands = {
 			if (!suffix) //catch if empty
 			{
 				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss");
-				}
+			}
 			else
 			{
 				var url = suffix;
 				bot.sendMessage(msg.channel, "Loading rss for "+url);
 				loadFeed(bot, msg, url, 1);
-				}
-				
-			
+			}
 		}
 	},
+    "rss_sub": {
+		desc: "PLACEHOLDER RSSFeed - Subscribe this channel to a specified RSS",
+		usage: "<rss_url>",
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+            if (!suffix) //catch if empty
+			{
+				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss");
+			}
+			else
+			{
+				var url = suffix;
+                //recode using async control flow
+                async.waterfall([
+                    function doQuery(done)
+                    {
+                        mysql_db.query('SELECT * FROM rss_feeds WHERE feed_url = ? AND channel_id = ? AND server_id = ?', [mysql.escape(url), msg.channel.id, msg.channel.server.id], function(err, results, fields){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                if(results.length >= 1)
+                                {
+                                    bot.sendMessage(msg.channel, "Error, this feed has already been suscribed to in this channel!");
+                                    //done(null, true);
+                                    done(new Error("Feed has already been subscribed!"));
+                                    return;
+                                }
+                                
+                                //feed does not exist
+                                done(null);
+                                return;
+                            }
+                        });
+                    },
+                    function checkValidFeed(done)
+                    {
+                        var feed = require("feedparser");
+                        var request = require("request");
+                        var fparse = new feed();
+                        
+                        if(url.substring(0,7) === "http://")    //noninclusive of last chara!
+                        {
+                            //tell the parser which URL to parse
+                            request(url).pipe(fparse);
+                            
+                            //catch if URL cannot be read
+                            fparse.on('error', function(error){
+                                bot.sendMessage(msg.channel, "Error, not a valid feed!");
+                                done(new Error(error.message));
+                                return;
+                            });
+                            
+                            fparse.on('readable', function(){
+                                done(null, this.meta.title);
+                                return;
+                            });
+                        }
+                        else{
+                            bot.sendMessage(msg.channel, "Error, Please append http:// to your url!");
+                            done(new Error("Feed URL is malformed!"));
+                            return;
+                        }
+                        
+                    },
+                    function doInsert(rss_title, done)
+                    {
+                        //PREPARE INSERT STATEMENT!
+                        var values = [mysql.escape(url), rss_title, msg.channel.id, msg.channel.name, msg.channel.server.id, msg.channel.server.name, msg.author.id, msg.author.name, 0];
+                        /*
+                        values.forEach(function(element,index,array){
+                            console.log(element);
+                        })*/
+                        mysql_db.query('INSERT INTO rss_feeds (feed_url, feed_title, channel_id, channel_name, server_id, server_name, user_sub_id, user_sub_name, last_updated_time_utc) VALUES (?,?,?,?,?,?,?,?,?)', values, function(err, results){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                done(null, [rss_title, url]);
+                            }
+                        });
+                        return;
+                    }],
+                    function(err, res){
+                        if(!err) bot.sendMessage(msg.channel, "Suscribing to "+res[0]+" - "+res[1]+" for channel "+msg.channel.name);
+                        else{
+                            console.log(err.message);
+                        }
+                        return;
+                    });
+			}
+		}
+	},
+    "rss_unsub": {
+		desc: "PLACEHOLDER RSSFeed - Unsuscribe this channel from an existing RSS",
+		usage: "<url>",
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+            if (!suffix) //catch if empty
+			{
+				bot.sendMessage(msg.channel, ":newspaper: Specify a URL please! Use rss_list to find out a list of feeds (and their corresponding URLs) subscribed on this channeL!");
+			}
+			else
+			{
+				var url = suffix;
+				async.waterfall([
+                    function doQuery(done)
+                    {
+                        mysql_db.query('SELECT * FROM rss_feeds WHERE feed_url = ? AND channel_id = ? AND server_id = ?', [mysql.escape(url), msg.channel.id, msg.channel.server.id], function(err, results, fields){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                if(results.length < 1)
+                                {
+                                    bot.sendMessage(msg.channel, "Error, this feed is not suscribed to in this channel!");
+                                    //done(null, true);
+                                    done(new Error("Feed is not subscribed to!"));
+                                    return;
+                                }
+                                //feed exists
+                                done(null, results[0].feed_title);
+                                return;
+                            }
+                        });
+                    },
+                    function doDelete(rss_title, done)
+                    {
+                        //PREPARE DELETE STATEMENT!
+                        var values = [mysql.escape(url), msg.channel.id, msg.channel.server.id];
+                        /*
+                        values.forEach(function(element,index,array){
+                            console.log(element);
+                        })*/
+                        mysql_db.query('DELETE FROM rss_feeds WHERE feed_url = ? AND channel_id = ? AND server_id = ?', values, function(err, results){
+                            if(err)
+                            {
+                                console.error('DB Error!: ' + err.stack);
+                                done(new Error(err.stack));
+                                return;
+                            }
+                            else
+                            {
+                                done(null, rss_title);
+                            }
+                        });
+                        return;
+                    }],
+                    function(err, res){
+                        if(!err) bot.sendMessage(msg.channel, "Unsuscribed from **"+res+"** - "+url+" for channel "+msg.channel.name);
+                        else{
+                            console.log(err.message);
+                        }
+                        return;
+                    });
+			}
+		}
+	},
+    "rss_list": {
+		desc: "PLACEHOLDER RSSFeed - Lists all subscribed RSS feeds on this channel",
+		usage: "",
+		cooldown: 4,
+		process: function(bot, msg) {
+            var toSend = [];
+            mysql_db.query('SELECT * FROM rss_feeds WHERE channel_id = ? AND server_id = ?', [msg.channel.id, msg.channel.server.id], function(err, results, fields){
+                 if(err)
+                {
+                    console.error('DB Error!: ' + err.stack);
+                }
+                else
+                {
+                    toSend.push(":eight_pointed_black_star: RSS Feeds subscribed for channel **"+msg.channel.name+"** in server **"+msg.channel.server.name+"**");
+                    results.forEach(function(element,index,array){
+                        toSend.push(":black_small_square: "+element['feed_title']+" - "+element['feed_url']+" | Subscribed by: **"+element['user_sub_name']+"**");
+                    });
+                    bot.sendMessage(msg.channel, toSend);
+                }
+            });
+        }
+    },
+    //DO NOT REMOVE THIS FUNCTION! THIS IS A GOOD FUCKING LEARNING POINT FOR ASYNCHRONOUS OPERATIONS
+    //FUCK JS THREADING NONSENSE
+    "dbtest": {
+		desc: "DBTest",
+		usage: "",
+		cooldown: 4,
+        deleteCommand: true,
+        shouldDisplay: false,
+		process: function(bot, msg) {
+            //PASS A FUNCTION THAT REQUIRES THE SUCCESS AS AN ARGUMENT
+            //WHEN EVERYHTING IN TESTDB EXECUTES, CALL THIS FUNCTION (CALLBACK) TO FINALLY OUTPUT THE RESULT
+            mysql_db.testDb( function(res){ bot.sendMessage(msg.channel, "DBConn: "+res+"! Check console for info") } );
+		}
+    },
+    "util_chaninfo": {
+        desc: "Utility - Channel Info",
+        usage: "",
+		cooldown: 4,
+        deleteCommand: true,
+        shouldDisplay: false,
+		process: function(bot, msg) {
+            var toSend = [];
+            toSend.push('ChanName: ', msg.channel.name);
+            toSend.push('ChanId: ', msg.channel.id);
+            toSend.push('ChanDesc: ', msg.channel.description);
+            toSend.push('ServerId: ', msg.channel.server.id);
+            toSend.push('ServerName: ', msg.channel.server.name);
+            bot.sendMessage(msg.channel, toSend);
+        }
+    },
+    "ratefegt": {
+        desc: "Rate this user's fegt level the Tatsubot way",
+        usage: "[user]",
+		cooldown: 4,
+        deleteCommand: true,
+		process: function(bot, msg, suffix) {
+            if (!suffix) //catch if empty
+			{
+				bot.sendMessage(msg.channel, "Don't be a baka "+msg.author.name+"! Please specify a user!");
+			}
+            else
+            {
+                var rating = Math.floor((Math.random() * 100));
+                var toSend = [];
+                if(rating == 0)
+                {
+                    toSend.push("Tatsu-chan believes **"+suffix+"** is attempting to hack the fegt detector ("+rating+"%)");
+                }
+                else if(rating < 10)
+                {
+                    toSend.push("Tatsu-chan thinks that **"+suffix+"** may have mild tendencies of being a fegt ("+rating+"%)");
+                }
+                else if(rating < 30)
+                {
+                    toSend.push("Tatsu-chan senses the fegt in **"+suffix+"** ("+rating+"%)");
+                }
+                else if(rating < 50)
+                {
+                    toSend.push("Tatsu-chan calculates that the inner fegt in **"+suffix+"** has not completely taken over ("+rating+"%)");
+                }
+                else if(rating < 70)
+                {
+                    toSend.push("Tatsu-chan advises to don protective gear as **"+suffix+"** is infected with fegt ("+rating+"%)");
+                }
+                else if(rating < 90)
+                {
+                    toSend.push("Tatsu-chan is evacuating at least several internets away from the fegtness of **"+suffix+"** and you should too ("+rating+"%)");
+                }
+                else
+                {
+                    toSend.push("Tatsu-chan has lost all hope in humanity for **"+suffix+"**. He/She has turned into a pure fegt! ("+rating+"%)");
+                }
+                
+                bot.sendMessage(msg.channel, toSend);
+            }
+        }
+    },
 	"shorten": {
 		desc: "Shorten links with http://frid.li Friday Night Link Shortener",
 		usage: "<URL to Shorten, (Optional) Vanity Shortened URL> example: !shorten www.friday.cafe,fngshorturl",
@@ -1070,3 +1365,4 @@ var commands = {
 
 exports.commands = commands;
 exports.aliases = aliases;
+
