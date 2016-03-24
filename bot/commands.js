@@ -297,7 +297,7 @@ var commands = {
 									toSend.push("Hi! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "** and I was invited to this server by " + msg.author.username.replace(/@/g, '@\u200b') + ".");
 									toSend.push("Use `" + config.command_prefix + "tatsuhelp` to get a list of normal commands.");
 									toSend.push("Mod/Admin commands __including bot settings__ can be viewed with `" + config.mod_command_prefix + "tatsuhelp`");
-									toSend.push("Complain / Find out more about me here: **https://discord.gg/0jiPgpPH9wnl4EV3**");
+									toSend.push("Complain / Find out more about me here: **https://discord.gg/0jiPgpPH9wpNLFj7**");
 									bot.sendMessage(server.defaultChannel, toSend);
 								} else setTimeout(function() { bot.sendMessage(server.defaultChannel, "*Joined on request of " + msg.author.username.replace(/@/g, '@\u200b') + "*"); }, 2000);
 							}
@@ -311,7 +311,7 @@ var commands = {
 		desc: "About me",
 		deleteCommand: true, cooldown: 10, usage: "",
 		process: function(bot, msg) {
-			bot.sendMessage(msg, ":id: **Hello, I'm Tatsu-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **I reside in:** https://discord.gg/0jiPgpPH9wqb0klr\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
+			bot.sendMessage(msg, ":id: **Hello, I'm Tatsu-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **I reside in:** https://discord.gg/0jiPgpPH9wpNLFj7\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
 		}
 	},
 	"dice": {
