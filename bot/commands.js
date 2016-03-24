@@ -1,15 +1,14 @@
-var config = require("./config.json");
-var rss_config = require("./rss_settings.json");
-var version = require("../package.json").version;
-var colors = require("./styles.js");
-var request = require("request");
-var xml2js = require("xml2js");
-var osuapi = require("osu-api");
-var ent = require("entities");
+var config = require("./config.json");              //config file for bot
+var version = require("../package.json").version;   //version
+var colors = require("./styles.js");                //textcolors
+var request = require("request");                   //html request
+var xml2js = require("xml2js");                     //xml to js library
+var osuapi = require("osu-api");                    //osu api lib
+var ent = require("entities")
 var db = require("./db.js");
-var mysql = require("mysql");
-var mysql_db = require("./mysql.js");
-var async = require("async");
+var mysql = require("mysql");                       //node-mysql lib
+var mysql_db = require("./mysql.js");               //mysql helper class
+var async = require("async");                       //node-async lib
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -1110,12 +1109,12 @@ var commands = {
                     function doInsert(rss_title, done)
                     {
                         //PREPARE INSERT STATEMENT!
-                        var values = [mysql.escape(url), rss_title, msg.channel.id, msg.channel.name, msg.channel.server.id, msg.channel.server.name, msg.author.id, msg.author.name];
+                        var values = [mysql.escape(url), rss_title, msg.channel.id, msg.channel.name, msg.channel.server.id, msg.channel.server.name, msg.author.id, msg.author.name, 0];
                         /*
                         values.forEach(function(element,index,array){
                             console.log(element);
                         })*/
-                        mysql_db.query('INSERT INTO rss_feeds (feed_url, feed_title, channel_id, channel_name, server_id, server_name, user_sub_id, user_sub_name) VALUES (?,?,?,?,?,?,?,?)', values, function(err, results){
+                        mysql_db.query('INSERT INTO rss_feeds (feed_url, feed_title, channel_id, channel_name, server_id, server_name, user_sub_id, user_sub_name, last_updated_time_utc) VALUES (?,?,?,?,?,?,?,?,?)', values, function(err, results){
                             if(err)
                             {
                                 console.error('DB Error!: ' + err.stack);
@@ -1311,94 +1310,4 @@ var commands = {
 
 exports.commands = commands;
 exports.aliases = aliases;
-
-//update RSS
-if(rss_config.update_enable)
-{
-        setInterval(() => {
-        console.log("[RSSFeed] Beginning Update loop");
-        async.waterfall([
-            function getUniqueUrls(done)
-            {
-                var url_array = [];
-                //GET UNIQUE URLS FOR PULLING RSSES FROM, WE DO NOT WANT TO PULL MULTIPLE OF THE SAME!
-                mysql_db.query("SELECT DISTINCT feed_url FROM rss_feeds",null,function(err, results, fields){
-                    if(err)
-                    {
-                        console.error('DB Error!: ' + err.stack);
-                    }
-                    else
-                    {
-                        results.forEach(function(element,index,array){
-                            url_array.push(element.feed_url);
-                            //console.log(element);
-                        });
-                        done(null, url_array);
-                        return;
-                    }
-                });
-            },
-            function doGetSubChans(urls, done)
-            {
-                var chan_dict = {}; //dict, note the {} and not []
-                //console.log(urls.length);
-                //async flow is required because of stupid forEach
-                //do note that since all urls are being processed together, the sequence will not be guaranteed
-                //however we don't require a sequence, just the relationship between a URL and its subbed channels
-                
-                //process each url at the same time but keeping synchronous flow per url
-                async.each(urls, function(url, done){
-                    //perform select query for this url
-                    mysql_db.query("SELECT channel_id, server_id FROM rss_feeds WHERE feed_url = ?",url,function(err, results, fields){
-                        if(err)
-                        {
-                            console.error('DB Error!: ' + err.stack);
-                        }
-                        else
-                        {
-                            var chan_list = [];
-                            //process each result at the same time but keeping synchronous flow per result
-                            async.each(results, function(channel, done)
-                            {
-                                //form a single string of server_id|channel_id and push it to the list
-                                chan_list.push(channel.server_id + "|" + channel.channel_id);
-                                //end our synchronous loop for this result
-                                done();
-                                return;
-                            },function(err){
-                                //we have processed all our results! we should have all the ids for this url!
-                                //if(!err) console.log('channels for url: ' + chan_list.length);
-                            });
-                            //finally, set the list as value for the dict using the url as its key
-                            chan_dict[url] = chan_list;
-                            //end our synchronous loop for this url
-                            done();
-                            return;
-                        }
-                    });
-                },function(err){
-                    //we have processed all our urls! we should have the complete dict now!
-                    if(!err)
-                    {
-                        //console.log('urls processed: ' + Object.keys(chan_dict).length);
-                        //pass this dict object over to the next function for processing within this waterfall
-                        done(null, chan_dict);
-                        return;
-                    }
-                });
-                return;
-            }/*,
-            function doUpdateRSS(chan_dict, done)
-            {
-                
-            }*/
-        ],function(err,res){
-            if(!err){
-                console.log(res);
-                console.log("[RSSFeed] Done loop, entries: "+Object.keys(res).length);
-            }
-        });
-        
-    }, rss_config.update_duration);
-}
 

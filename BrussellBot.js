@@ -9,6 +9,14 @@ var discord = require("discord.js");
 /*var cleverbot = require("./bot/cleverbot.js").cleverbot;*/
 var colors = require("./bot/styles.js");
 var db = require("./bot/db.js");
+//==others
+var mysql = require("mysql");                       //node-mysql lib
+var mysql_db = require("./bot/mysql.js");               //mysql helper class
+var async = require("async");                       //node-async lib
+var moment = require('moment');                     //Moment.js lib
+var rss_config = require("./bot/rss_settings.json");    //rss config file for bot
+var Stopwatch = require('statman-stopwatch');
+
 checkConfig();
 
 var lastExecTime = {};
@@ -283,3 +291,255 @@ setInterval(() => {
 	bot.setPlayingGame(games[Math.floor(Math.random() * (games.length))]);
 	if (debug) { console.log(colors.cDebug(" DEBUG ") + "Updated bot's game"); }
 }, 800000); //change playing game every 12 minutes
+
+//update RSS
+if(rss_config.update_enable)
+{
+    setInterval(() => {
+        console.log("[RSSFeed] Beginning Update loop");
+        var sw = new Stopwatch(true);
+        async.waterfall([
+            function getUniqueUrls(done)
+            {
+                var url_array = [];
+                //GET UNIQUE URLS FOR PULLING RSSES FROM, WE DO NOT WANT TO PULL MULTIPLE OF THE SAME!
+                mysql_db.query("SELECT DISTINCT feed_url FROM rss_feeds",null,function(err, results, fields){
+                    if(err)
+                    {
+                        console.error('DB Error!: ' + err.stack);
+                        done(new Error(err.stack));
+                        return;
+                    }
+                    else
+                    {
+                        results.forEach(function(element,index,array){
+                            url_array.push(element.feed_url);
+                            //console.log(element);
+                        });
+                        done(null, url_array);
+                        return;
+                    }
+                });
+            },
+            function doGetSubChans(urls, done)
+            {
+                var chan_dict = {}; //dict, note the {} and not []
+                //console.log(urls.length);
+                //async flow is required because of stupid forEach
+                //do note that since all urls are being processed together, the sequence will not be guaranteed
+                //however we don't require a sequence, just the relationship between a URL and its subbed channels
+                
+                //process each url at the same time but keeping synchronous flow per url
+                async.each(urls, function(url, done){
+                    //perform select query for this url
+                    chan_dict[url] = {};
+                    async.parallel([
+                        function doSelectChannelId(done){
+                            mysql_db.query("SELECT channel_id FROM rss_feeds WHERE feed_url = ?",url,function(err, results, fields){
+                                if(err)
+                                {
+                                    console.error('DB Error!: ' + err.stack);
+                                    done(new Error(err.stack));
+                                    return;
+                                }
+                                else
+                                {
+                                    var chan_list = [];
+                                    //process each result at the same time but keeping synchronous flow per result
+                                    async.each(results, function(channel, done)
+                                    {
+                                        //get channel_id and push it to the list
+                                        chan_list.push(channel.channel_id);
+                                        //end our synchronous loop for this result
+                                        done(null);
+                                        return;
+                                    },function(err){
+                                        //we have processed all our results! we should have all the ids for this url!
+                                        if(err)
+                                        {
+                                            done(new Error("something went wrong when forming channel list!"));
+                                            return;
+                                        }
+                                    });
+                                    //finally, set the list as value for the dict using the url as its key
+                                    chan_dict[url].channels = chan_list;
+                                    //console.log("[RSSFeed] Channels for "+url+" - "+chan_list);
+                                    //end our synchronous loop for this url
+                                    done(null);
+                                    return;
+                                }
+                            });
+                        },
+                        function doSelectLastPubDate(done){
+                            mysql_db.query("SELECT DISTINCT last_updated_time_utc FROM rss_feeds WHERE feed_url = ?",url,function(err, results, fields){
+                                if(err)
+                                {
+                                    console.error('DB Error!: ' + err.stack);
+                                    done(new Error(err.stack));
+                                    return;
+                                }
+                                else
+                                {
+                                    chan_dict[url].last_updated_time_utc = results[0].last_updated_time_utc;
+                                    //end our synchronous loop for this url
+                                    done(null);
+                                    return;
+                                }
+                            });
+                        }], 
+                        function(err, res)
+                        {
+                            if(err) done(err);
+                            else done(null);
+                            return;
+                        });
+                },function(err){
+                    //we have processed all our urls! we should have the complete dict now!
+                    if(!err)
+                    {
+                        //console.log('urls processed: ' + Object.keys(chan_dict).length);
+                        //pass this dict object over to the next function for processing within this waterfall
+                        done(null, chan_dict);
+                        return;
+                    }
+                });
+            },
+            function doGetSendRSS(chan_dict, done)
+            {
+                async.each(Object.keys(chan_dict), function(url, done)
+                {
+                    var channels_to_send = chan_dict[url].channels;  //list! not a string yet!
+                    var actual_url = url.substring(1, url.length - 1);
+                    var lastupdatedtime_unix = chan_dict[url].last_updated_time_utc;
+                    
+                    async.waterfall([
+                        function fetchRSS(done)
+                        {
+                            //console.log("->fetchRSS");
+                            var feed = require("feedparser");
+                            var request = require("request");
+                            var fparse = new feed();
+                            var data = null;
+                            
+                            //tell the parser which URL to parse
+                            request(actual_url).pipe(fparse);
+                            
+                            //catch if URL cannot be read
+                            fparse.on('error', function(error){
+                                done(new Error(error.message));
+                                return;
+                            });
+                            
+                            fparse.on('readable', function(){
+                                var stream = this;
+                                data = stream.read();
+                                //done(null, stream.read());
+                                return;
+                            });
+                            
+                            fparse.on('end', function(){
+                                //console.log("EOS: "+actual_url);
+                                done(null, data);
+                                return;
+                            });
+                        },
+                        function sendRSSMessage(item, done)
+                        {
+                            if(!item)
+                            {
+                                done(new Error("Something went wrong!"));
+                                return;
+                            }
+                            else
+                            {
+                                var pubdate_unix = moment(item.pubdate).unix();
+                                //console.log(pubdate_unix + " LAST: " + lastupdatedtime_unix);
+                                if(pubdate_unix > lastupdatedtime_unix)         //if there is an update, the pubdate should be more than the last updated!
+                                {
+                                    console.log("[RSSFeed] " + url + " needs updating!");
+                                    async.each(chan_dict[url].channels, function(channel, done)
+                                    {
+                                        async.waterfall([
+                                            function sendHeader(done)
+                                            {
+                                                bot.sendMessage(channel, ":clock3:"+item.pubdate).then(msg => done(null));
+                                                return;
+                                            },
+                                            function sendBody(done)
+                                            {
+                                                bot.sendMessage(channel, ":newspaper: **"+item.title + "** - " + item.link, function() {
+                                                    var text = htmlToText.fromString(item.description,{
+                                                        wordwrap:true,
+                                                        ignoreHref:true
+                                                    });
+                                                    bot.sendMessage(channel,text+"\n");                    
+                                                });
+                                                done(null);
+                                                return;
+                                            }
+                                        ], function(err, res){return;});
+                                        done(null);
+                                        return;
+                                    },function(err){
+                                        //we have sent all our RSSes!
+                                        if(!err)
+                                        {
+                                            //console.log("[RSSFeed] channels processed for: " + url);
+                                            done(null, pubdate_unix);
+                                            return;
+                                        }
+                                        else{
+                                            console.log("[RSSFeed] shit happened!");
+                                            done(err);
+                                            return;
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    console.log("[RSSFeed] " + url + " does not need updating!");
+                                    done(null, pubdate_unix);
+                                    return;
+                                }
+                            }
+                        },
+                        function updateLastUpdatedTime(pubdate_unix, done)
+                        {
+                            //console.log("->updateLastUpdatedTime");
+                            mysql_db.query("UPDATE rss_feeds SET last_updated_time_utc = ? WHERE feed_url = ?",[pubdate_unix, url],function(err, result){
+                                if(err)
+                                {
+                                    console.error('DB Error!: ' + err.stack);
+                                    done(new Error(err.stack));
+                                    return;
+                                }
+                                else
+                                {
+                                    //console.log("UPDATE Affected rows: "+result.affectedRows);
+                                    done(null, "[RSSFeed] url db updated: "+url);
+                                    return;
+                                }
+                            });
+                        }
+                    ],function(err,res){
+                        if(err) done(err);
+                        else done(null);
+                        return;
+                    });
+                },function(err){
+                    if(!err)
+                    {
+                        //done(null, chan_dict);
+                        done(null);
+                        return;
+                    }
+                });
+            }
+        ],function(err,res){
+            if(!err){
+                sw.stop();
+                console.log("[RSSFeed] Done loop - elapsed: "+ Math.round(sw.read()) / 1000 + "s");
+            }
+        });           
+    }, rss_config.update_duration);
+}
