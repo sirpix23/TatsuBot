@@ -161,7 +161,8 @@ var aliases = {
 	"r": "ratewaifu", "rate": "ratewaifu", "waifu": "ratewaifu",
 	"short": "shorten", "shrt": "shorten",
 	"imgur": "image", "im": "image",
-	"f": "fortune"
+	"f": "fortune",
+	"hibp": "haveibeenpwned", "pwned": "haveibeenpwned"
 };
 
 var commands = {
@@ -1389,6 +1390,49 @@ var commands = {
 			} else if (/^.* in ((\d|a|one|two|three) ?d[ays]*)?( and| &)? ?((\d\d?\d?|a|an|one|two|three) ?h[ours]*)?( and| &)? ?((\d\d?\d?|a|an|one|two|three) ?m[inutes]*)?( and| &)? ?((\d\d?\d?|a|an|one|two|three) ?s[econds]*)?$/i.test(suffix)) {
 				console.log('detected valid remind');
 			} else correctUsage("remindme", this.usage, msg, bot);
+		}
+	},
+	"haveibeenpwned": {
+		desc: "Checks the 'Have I Been Pwned' database to see if your accounts have been breached. Sends details via private message.",
+		usage: "<Email Address>",
+		info: "Checks the 'Have I Been Pwned' database to see if your personal details have been leaked on the internet and sends the result via private message.\n\n:information_source: You can also privately use this command by sending Tatsu-chan the command via a private message.",
+		deleteCommand: false,
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+			if(suffix){
+				var request = require('request');
+			
+				var options = {
+					url: 'https://haveibeenpwned.com/api/v2/breachedaccount/' + suffix,
+					headers: {
+						'User-Agent': 'Tatsu-chan Discordapp Chat Bot'
+					}
+				};
+			
+				function callback(error, response, body) {
+					var standardMsg = ":information_source: Your HIBP details have been sent via private message."
+					//very minor todo: fix async flow
+					if (!error && response.statusCode == 200 && /^(([a-zA-Z0-9_.-])+@([a-zA-Z0-9_.-])+\.([a-zA-Z])+([a-zA-Z])+)?$/.test(suffix)) {
+							body = JSON.parse(body);
+							bot.sendMessage(msg, standardMsg);
+							bot.sendMessage(msg.author, ":information_source: You have some compromised accounts!")
+							for (var i = 0; i < body.length; i++) {							
+								bot.sendMessage(msg.author, "\n:exclamation: **" + body[i].Title + "**\n" + "**:black_small_square: Domain:** " +  body[i].Domain + "\n" + ":black_small_square: **Date of Breach:** " + body[i].BreachDate + "\n" + ":black_small_square: **Affected Accounts:** " + body[i].PwnCount + "\n" + ":black_small_square: **Data Leaked: ** " + body[i].DataClasses + "\n" + ":black_small_square: **Breach Verified?: ** " + body[i].IsVerified + "\n");
+							}
+							bot.sendMessage(msg.author, ":information_source: More breach details are available at https://haveibeenpwned.com.")
+					}
+					else if (!/^(([a-zA-Z0-9_.-])+@([a-zA-Z0-9_.-])+\.([a-zA-Z])+([a-zA-Z])+)?$/.test(suffix)){
+						bot.sendMessage(msg, "W-W-Why would you enter an invalid email address?!");
+					}
+					else if (response.statusCode == 404 || 400){
+						bot.sendMessage(msg, standardMsg);
+						bot.sendMessage(msg.author, ":information_source: Good news - no pwnage found! No breached accounts and no pastes.")
+					}
+					else console.log(error);
+				}
+								
+				request(options, callback);
+			}
 		}
 	}
 };
