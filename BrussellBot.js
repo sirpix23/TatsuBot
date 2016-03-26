@@ -319,7 +319,6 @@ if(rss_config.update_enable)
             function doGetSubChans(urls, done)
             {
                 var chan_dict = {}; //dict, note the {} and not []
-                //console.log(urls.length);
                 //async flow is required because of stupid forEach
                 //do note that since all urls are being processed together, the sequence will not be guaranteed
                 //however we don't require a sequence, just the relationship between a URL and its subbed channels
@@ -330,7 +329,7 @@ if(rss_config.update_enable)
                     chan_dict[url] = {};
                     async.parallel([
                         function doSelectChannelId(done){
-                            mysql_db.query("SELECT channel_id FROM rss_feeds WHERE feed_url = ?",url,function(err, results, fields){
+                            mysql_db.query("SELECT channel_id, tags_include, tags_exclude FROM rss_feeds WHERE feed_url = ?",url,function(err, results, fields){
                                 if(err)
                                 {
                                     console.error('DB Error!: ' + err.stack);
@@ -339,12 +338,33 @@ if(rss_config.update_enable)
                                 }
                                 else
                                 {
-                                    var chan_list = [];
+                                    //var chan_list = [];
+                                    /*------------------------
+                                    //channels: {
+                                        [
+                                        '1234' : { 
+                                            tags_include: "abc",
+                                            tags_exclude: "def"
+                                        },
+                                        '5678' : {
+                                            tags_include: "None",
+                                            tags_exclude: "None"
+                                        }
+                                        ]
+                                    }
+                                    ------------------------*/
+                                    var chan_list = {};
                                     //process each result at the same time but keeping synchronous flow per result
                                     async.each(results, function(channel, done)
                                     {
                                         //get channel_id and push it to the list
-                                        chan_list.push(channel.channel_id);
+                                        //chan_list.push(channel.channel_id);
+                                        var tags_list = { 
+                                            'tags_include': channel.tags_include,
+                                            'tags_exclude': channel.tags_exclude
+                                        };
+                                        //chan_list.push(channel.channel_id);
+                                        chan_list[channel.channel_id] = tags_list;
                                         //end our synchronous loop for this result
                                         done(null);
                                         return;
@@ -403,9 +423,11 @@ if(rss_config.update_enable)
             {
                 async.each(Object.keys(chan_dict), function(url, done)
                 {
-                    var channels_to_send = chan_dict[url].channels;  //list! not a string yet!
+                    var channels_to_send = Object.keys(chan_dict[url].channels);  //list! not a string yet!
                     var actual_url = url.substring(1, url.length - 1);
                     var lastupdatedtime_unix = chan_dict[url].last_updated_time_utc;
+                    
+                    //console.log(url+"->"+channels_to_send);
                     
                     async.waterfall([
                         function fetchRSS(done)
@@ -448,13 +470,108 @@ if(rss_config.update_enable)
                             else
                             {
                                 var pubdate_unix = moment(item.pubdate).unix();
+                                /*
+                                if(item.categories){
+                                    console.log(item.categories);
+                                }*/
                                 //console.log(pubdate_unix + " LAST: " + lastupdatedtime_unix);
                                 if(pubdate_unix > lastupdatedtime_unix)         //if there is an update, the pubdate should be more than the last updated!
                                 {
                                     console.log("[RSSFeed] " + url + " needs updating!");
-                                    async.each(chan_dict[url].channels, function(channel, done)
+                                    //async.each(chan_dict[url].channels, function(channel, done)
+                                    async.each(channels_to_send, function(channel, done)
                                     {
                                         async.waterfall([
+                                            function parseCategories(done)
+                                            {
+                                                var categories = [];
+                                                for(var i = 0; i < item.categories.length; i++)
+                                                {
+                                                    categories.push(item.categories[i].toLowerCase());
+                                                }
+                                                //console.log(categories);
+                                                
+                                                if(categories.length > 0){
+                                                    async.waterfall([
+                                                        function checkIncludeTags(done)
+                                                        {
+                                                            var tags_include = chan_dict[url].channels[channel].tags_include;
+                                                            if(tags_include != "None")
+                                                            {
+                                                                var tags = [];
+                                                                var bFound = false;
+                                                                //INCLUDE
+                                                                
+                                                                if(tags_include.indexOf(';') < 0){
+                                                                    tags.push(tags_include);
+                                                                }
+                                                                else{
+                                                                    tags = tags_include.split(';');
+                                                                }
+                                                                //console.log(tags);
+                                                                //====
+                                                                
+                                                                for(var i = 0; i < tags.length; i++)
+                                                                {
+                                                                    if(categories.indexOf(tags[i]) > -1){
+                                                                        bFound = true;
+                                                                    }
+                                                                }
+                                                                
+                                                                if(bFound) done(null);
+                                                                else done(new Error("Item with include categories not found!"));
+                                                                return;
+                                                            }
+                                                            else{
+                                                                done(null);
+                                                                return;
+                                                            }
+                                                        },
+                                                        function checkExcludeTags(done)
+                                                        {
+                                                            var tags_exclude = chan_dict[url].channels[channel].tags_exclude;
+                                                            if(tags_exclude != "None")
+                                                            {
+                                                                var tags = [];
+                                                                var bFound = false;
+                                                                //EXCLUDE
+                                                                
+                                                                if(tags_exclude.indexOf(';') < 0){
+                                                                    tags.push(tags_exclude);
+                                                                }
+                                                                else{
+                                                                    tags = tags_exclude.split(';');
+                                                                }
+                                                                //console.log(tags);
+                                                                //====
+                                                                
+                                                                for(var i = 0; i < tags.length; i++)
+                                                                {
+                                                                    if(categories.indexOf(tags[i]) > -1){
+                                                                        bFound = true;
+                                                                    }
+                                                                }
+                                                                
+                                                                if(!bFound) done(null);
+                                                                else done(new Error("Item with exclude categories found!"));
+                                                                return;
+                                                            }
+                                                            else{
+                                                                done(null);
+                                                                return;
+                                                            }
+                                                        }
+                                                    ],function(err, res)
+                                                    {
+                                                        done(err);
+                                                        return;
+                                                    });
+                                                }
+                                                else{
+                                                    done(null);
+                                                    return;
+                                                }
+                                            },
                                             function sendHeader(done)
                                             {
                                                 bot.sendMessage(channel, ":clock3:"+item.pubdate).then(msg => done(null));
@@ -462,12 +579,12 @@ if(rss_config.update_enable)
                                             },
                                             function sendBody(done)
                                             {
-                                                bot.sendMessage(channel, ":newspaper: **"+item.title + "** - " + item.link, function() {
+                                                bot.sendMessage(channel, ":newspaper: **"+item.title+ "** - " + item.link+"\nTags: **"+item.categories+"**", function() {
                                                     var text = htmlToText.fromString(item.description,{
                                                         wordwrap:true,
                                                         ignoreHref:true
                                                     });
-                                                    bot.sendMessage(channel,text+"\n");                    
+                                                    bot.sendMessage(channel,text+"\n\n");                    
                                                 });
                                                 done(null);
                                                 return;
@@ -497,6 +614,7 @@ if(rss_config.update_enable)
                                     return;
                                 }
                             }
+                            
                         },
                         function updateLastUpdatedTime(pubdate_unix, done)
                         {

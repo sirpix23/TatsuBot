@@ -6,11 +6,12 @@ var xml2js = require("xml2js");                     //xml to js library
 var osuapi = require("osu-api");                    //osu api lib
 var ent = require("entities")
 var waifus = require("./waifus.json");
-
 var db = require("./db.js");
+
 var mysql = require("mysql");                       //node-mysql lib
 var mysql_db = require("./mysql.js");               //mysql helper class
 var async = require("async");                       //node-async lib
+var yargs = require('yargs');                //minimist args parser lib
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -1036,18 +1037,41 @@ var commands = {
 		}
 	},
     "rss_sub": {
-		desc: "RSSFeed - Subscribe this channel to a specified RSS",
-		usage: "<rss_url>",
+		desc: "RSSFeed - Subscribe this channel to a specified RSS. For advanced options, do !rss_sub -h",
+		usage: "<rss_url> [optional -h/-i/-e] [tags] [optional -i/-e] [tags]",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
-            if (!suffix) //catch if empty
+            //var argv = parseArgs(suffix.split(' '), { string: 'i' }, { string: 'e' }, { string: '_' });
+            var argv = yargs.parse(suffix);
+            //console.log(argv);
+            //if (!suffix) //catch if empty
+            if(argv._ == '' && !argv.h)
 			{
-				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss");
+				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss | Do !rss_sub -h for more info!");
+                return;
 			}
+            else if(argv.h)
+            {
+                var helpMsg = [];
+                helpMsg.push("RSSFeed Subscribe Help");
+                helpMsg.push("**Usage**: !rss_sub <url> [-h/-i/-e] [tags] [-i/-e] [tags]");
+                helpMsg.push("If -i or -e flag is specified, tags to include/exclude should be separated by a ; semicolon (Case-insensitive!). E.g games;music;lifestyle");
+                helpMsg.push("**IMPORTANT** If the feed is not categorized (does not contain category property), tags set will be ignored!")
+                helpMsg.push("\n\n**Flags:**\n-i flag - [OPTIONAL] Tags to **include** when pulling from a feed. RSSFeed will only pull items that contain input tags");
+                helpMsg.push("-e flag - [OPTIONAL] Tags to **exclude** when pulling from a feed. RSSFeed will only pull items that don't contain input tags");
+                helpMsg.push("Usage of both flags will cause RSSFeed to filter the latest item with INCLUDED tags **THEN** filter out if they contain EXCLUDED tags");
+                helpMsg.push("As a limitation, to change tags of a subscribed feed in your channel, you have to unsuscribe, then resuscribe with new tags (may change in future)");
+                bot.sendMessage(msg.author, helpMsg);
+                return;
+            }
 			else
 			{
-				var url = suffix;
+				//var url = suffix;
+                var url = argv._[0];
+                var include_tags = (argv.i) ? (argv.i).toLowerCase() : "None";
+                var exclude_tags = (argv.e) ? (argv.e).toLowerCase() : "None";
                 //recode using async control flow
+                
                 async.waterfall([
                     function doQuery(done)
                     {
@@ -1079,7 +1103,7 @@ var commands = {
                         var feed = require("feedparser");
                         var request = require("request");
                         var fparse = new feed();
-                        
+                        console.log(url);
                         if(url.substring(0,7) === "http://")    //noninclusive of last chara!
                         {
                             //tell the parser which URL to parse
@@ -1107,12 +1131,9 @@ var commands = {
                     function doInsert(rss_title, done)
                     {
                         //PREPARE INSERT STATEMENT!
-                        var values = [mysql.escape(url), rss_title, msg.channel.id, msg.channel.name, msg.channel.server.id, msg.channel.server.name, msg.author.id, msg.author.name, 0];
-                        /*
-                        values.forEach(function(element,index,array){
-                            console.log(element);
-                        })*/
-                        mysql_db.query('INSERT INTO rss_feeds (feed_url, feed_title, channel_id, channel_name, server_id, server_name, user_sub_id, user_sub_name, last_updated_time_utc) VALUES (?,?,?,?,?,?,?,?,?)', values, function(err, results){
+                        var values = [mysql.escape(url), rss_title, msg.channel.id, msg.channel.name, msg.channel.server.id, msg.channel.server.name, msg.author.id, msg.author.name, 0, include_tags, exclude_tags];
+
+                        mysql_db.query('INSERT INTO rss_feeds (feed_url, feed_title, channel_id, channel_name, server_id, server_name, user_sub_id, user_sub_name, last_updated_time_utc, tags_include, tags_exclude) VALUES (?,?,?,?,?,?,?,?,?,?,?)', values, function(err, results){
                             if(err)
                             {
                                 console.error('DB Error!: ' + err.stack);
@@ -1127,7 +1148,20 @@ var commands = {
                         return;
                     }],
                     function(err, res){
-                        if(!err) bot.sendMessage(msg.channel, "Suscribing to "+res[0]+" - "+res[1]+" for channel "+msg.channel.name);
+                        if(!err){
+                            async.waterfall([
+                                function sendHead(done)
+                                {
+                                    bot.sendMessage(msg.channel, "Suscribing to "+res[0]+" - "+res[1]+" for channel "+msg.channel.name).then(msg => done(null));
+                                    return;
+                                },
+                                function sendBody(done)
+                                {
+                                    bot.sendMessage(msg.channel, "Tags **included**: "+include_tags+"\nTags **excluded**: "+exclude_tags);
+                                    done(null);
+                                }
+                            ],function(err,res){});
+                        }
                         else{
                             console.log(err.message);
                         }
@@ -1210,7 +1244,6 @@ var commands = {
 		usage: "",
 		cooldown: 4,
 		process: function(bot, msg) {
-            var toSend = [];
             mysql_db.query('SELECT * FROM rss_feeds WHERE channel_id = ? AND server_id = ?', [msg.channel.id, msg.channel.server.id], function(err, results, fields){
                  if(err)
                 {
@@ -1218,11 +1251,23 @@ var commands = {
                 }
                 else
                 {
-                    toSend.push(":eight_pointed_black_star: RSS Feeds subscribed for channel **"+msg.channel.name+"** in server **"+msg.channel.server.name+"**");
-                    results.forEach(function(element,index,array){
-                        toSend.push(":black_small_square: "+element['feed_title']+" - "+element['feed_url']+" | Subscribed by: **"+element['user_sub_name']+"**");
-                    });
-                    bot.sendMessage(msg.channel, toSend);
+                    async.waterfall([
+                        function sendHead(done)
+                        {
+                            bot.sendMessage(msg.channel, ":eight_pointed_black_star: RSS Feeds subscribed for channel **"+msg.channel.name+"** in server **"+msg.channel.server.name+"**").then(msg => done(null));
+                            return;
+                        },
+                        function sendBody(done)
+                        {
+                            results.forEach(function(element,index,array){
+                                bot.sendMessage(msg.channel, ":black_small_square: "+element['feed_title']+" - "+element['feed_url']+
+                                " | Subscribed by: **"+element['user_sub_name']+
+                                "**\nTags **included**: "+element['tags_include']+
+                                "\nTags **excluded**: "+element['tags_exclude']);
+                            });
+                            done(null);
+                        }
+                    ],function(err,res){});
                 }
             });
         }
@@ -1390,7 +1435,54 @@ var commands = {
 				console.log('detected valid remind');
 			} else correctUsage("remindme", this.usage, msg, bot);
 		}
-	}
+	},
+    "psychopass": {
+        shouldDisplay: false,
+        desc: "Sibyl System judges you.",
+        usage: "[user]",
+        cooldown: 4,
+        deleteCommand: true,
+        process: function(bot, msg, suffix) {
+            if (!suffix) //catch if empty
+            {
+                bot.sendMessage(msg.channel, "Cymatic scan error! Please specify a user!");
+            }
+            else
+            {
+                var rating = Math.floor((Math.random() * 500));
+                var toSend = [];
+                if(msg.author.id == 132113104380231680)//capts id
+                {
+                    rating = rating / 10 + 800;
+                }
+                if(rating < 100)
+                {
+                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is not a target for enforcement action. The trigger of Dominator will be locked.");
+                }
+                else if(rating < 300)
+                {
+                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is classified as a latent criminal and is a target for enforcement action. Dominator is set to Non-Lethal Paralyzer mode.");
+                }
+                else
+                {
+                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** poses a serious threat to the society. Lethal force is authorized. Dominator will automatically switch to Lethal Eliminator.");
+                }
+               
+                bot.sendMessage(msg.channel, toSend);
+            }
+        }
+    },
+    "a_test": {
+        shouldDisplay: false,
+        desc: "minimist test",
+        usage: "[args]",
+        cooldown: 4,
+        deleteCommand: true,
+        process: function(bot, msg, suffix) {
+            var argv = yargs.parse(suffix);
+            console.log(argv);
+        }
+    }
 };
 
 exports.commands = commands;
