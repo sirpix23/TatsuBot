@@ -880,7 +880,7 @@ var commands = {
 									{
 										bFound = false;
 										var strFilter = argv.anime;
-										console.log(strFilter.toLowerCase());
+										//console.log(strFilter.toLowerCase());
 										if(chara_animeslist.toLowerCase().indexOf(strFilter.toLowerCase(),0) > -1)
 										{
 											bFound = true;
@@ -915,7 +915,7 @@ var commands = {
 						}
 					});
 				}
-				//bot.stopTyping(msg.channel);
+				bot.stopTyping(msg.channel);
 			}
 			else correctUsage("anichar", this.usage, msg, bot);
 		}
