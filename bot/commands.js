@@ -11,7 +11,11 @@ var db = require("./db.js");
 var mysql = require("mysql");                       //node-mysql lib
 var mysql_db = require("./mysql.js");               //mysql helper class
 var async = require("async");                       //node-async lib
-var yargs = require('yargs');                //minimist args parser lib
+var yargs = require('yargs');                       //minimist args parser lib
+var firstBy = require('thenby');                    //thenby array sort lib, multicondition
+var moment = require('moment');                     //Moment.js lib
+var cheerio = require('cheerio');							//xray web scraper lib
+var jp_conv = require('jp-conversion');
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -163,7 +167,8 @@ var aliases = {
 	"short": "shorten", "shrt": "shorten",
 	"imgur": "image", "im": "image",
 	"f": "fortune",
-	"hibp": "haveibeenpwned", "pwned": "haveibeenpwned"
+	"hibp": "haveibeenpwned", "pwned": "haveibeenpwned",
+	"e2k" : "katakanize", "katakana" : "katakanize"
 };
 
 var commands = {
@@ -642,43 +647,279 @@ var commands = {
 			bot.sendMessage(msg, ":8ball: " + responses[Math.floor(Math.random() * (responses.length))]);
 		}
 	},
-	"anime": {
-		desc: "Gets details on an anime from MAL.",
-		usage: "<anime name>",
+    "anime": {
+        
+		desc: "Gets details on an anime from MAL. Do !anime -h for more info",
+		usage: "<anime name> [optional -r/-p/-a/-u/-h]",
 		deleteCommand: true,
 		cooldown: 6,
 		process: function(bot, msg, suffix) {
 			if (suffix) {
-				if (!MAL_USER || !MAL_PASS || MAL_USER == "" || MAL_PASS =="") { bot.sendMessage(msg, "MAL login not configured by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
-				bot.startTyping(msg.channel);
-				var tags = ent.encodeHTML(suffix);
-				var rUrl = "http://myanimelist.net/api/anime/search.xml?q=" + tags;
-				request(rUrl, {"auth": {"user": MAL_USER, "pass": MAL_PASS, "sendImmediately": false}}, function(error, response, body) {
-					if (error) console.log(error);
-					else if (!error && response.statusCode == 200) {
-						xml2js.parseString(body, function(err, result) {
-							var title = result.anime.entry[0].title;
-							var english = result.anime.entry[0].english;
-							var ep = result.anime.entry[0].episodes;
-							var score = result.anime.entry[0].score;
-							var type = result.anime.entry[0].type;
-							var status = result.anime.entry[0].status;
-							var synopsis = result.anime.entry[0].synopsis.toString();
-							var id = result.anime.entry[0].id;
-							synopsis = synopsis.replace(/<br \/>/g, " "); synopsis = synopsis.replace(/\[(.{1,10})\]/g, "");
-							synopsis = synopsis.replace(/\r?\n|\r/g, " "); synopsis = synopsis.replace(/\[(i|\/i)\]/g, "*"); synopsis = synopsis.replace(/\[(b|\/b)\]/g, "**");
-							synopsis = ent.decodeHTML(synopsis);
-							if (!msg.channel.isPrivate) {
-								if (synopsis.length > 400) { synopsis = synopsis.substring(0, 400); synopsis += "..."; }
-							}
-							bot.sendMessage(msg, ":tv: " + "**" + title + " / " + english + "**\n**Type:** " + type + " **| Episodes:** " + ep + " **| Status:** " + status + " **| Score:** " + score + "\n" + synopsis + "\n**http://www.myanimelist.net/anime/" + id + "**");
-						});
-					} else bot.sendMessage(msg, "\"" + suffix + "\" not found. Blame the MAL search API", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
-				});
-				bot.stopTyping(msg.channel);
-			} else correctUsage("anime", this.usage, msg, bot);
+                //add function for recent and popular, if both aren't set then do default recent
+                var argv = yargs.parse(suffix);
+                var bRecent = false;
+                var bPopular = false;
+                var bAiring = false;
+                var bShowAllReleasedUnreleased = true;
+                var strSearch = argv._.join(' ');
+                if(argv.h || argv.help)
+                {
+                    var helpMsg = [];
+                    helpMsg.push(":information_source: Anime Search Help");
+                    helpMsg.push("**Usage**: !anime <search_term> [optional --help/--recent/--popular/--airing/--unreleased]");
+                    helpMsg.push("\n\n**Flags:**\n [OPTIONAL] Tags to include to search/filter.");
+                    helpMsg.push(":black_small_square:--help/-h | Display this help");
+                    helpMsg.push(":black_small_square:--recent/-r | Sort by most recent and return first entry based on the Start_Date. May show unreleased unless otherwise specified");
+                    helpMsg.push(":black_small_square:--popular/-p | Sort by score and return first entry");
+                    helpMsg.push(":black_small_square:--airing/--aired/-a | Displays only animes currently airing/already aired");
+                    helpMsg.push(":black_small_square:--unreleased/-u | Displays only animes that aren't aired yet");
+                    helpMsg.push("NOTE: Using both -u and -a will pull the first result returned by the API unfiltered. Results may be shit :)")
+                    bot.sendMessage(msg.author, helpMsg);
+                    return;
+                }
+                else
+                {
+                    if(argv.r || argv.recent) bRecent = !bRecent;       //recent, sortby start_date (airing date start)
+                    if(argv.p || argv.popular) bPopular = !bPopular;    //popular, sortby score
+                    if((argv.a || argv.airing) && (argv.u || argv.unreleased)){
+                        bShowAllReleasedUnreleased = true;
+                    }
+                    else{
+                        if(argv.a || argv.airing || argv.aired){
+                        bShowAllReleasedUnreleased = false;
+                        bAiring = true;           //airing/released
+                        }
+                        if(argv.u || argv.unreleased){
+                            bShowAllReleasedUnreleased = false;
+                            bAiring = false;      //unaired/unreleased
+                        }
+                    }
+                    
+                    if (!MAL_USER || !MAL_PASS || MAL_USER == "" || MAL_PASS =="") { bot.sendMessage(msg, "MAL login not configured by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+                    bot.startTyping(msg.channel);
+                    var tags = ent.encodeHTML(strSearch);
+                    var rUrl = "http://myanimelist.net/api/anime/search.xml?q=" + tags;
+                    request(rUrl, {"auth": {"user": MAL_USER, "pass": MAL_PASS, "sendImmediately": false}}, function(error, response, body) {
+                        if (error) console.log(error);
+                        else if (!error && response.statusCode == 200) {
+                            //FALZ -- MY MORE RELEVANT SEARCH ALGO, BECAUSE WHO WATCHES 1999 ANIMES (jk cowboy bebop is awesome)
+                            async.waterfall([
+                                function getSearchAPIResult(done)
+                                {
+                                    xml2js.parseString(body, function(err, result){
+                                        done(null, result.anime.entry);
+                                    });
+                                },
+                                function filterResult(result, done)
+                                {
+                                    if(!bShowAllReleasedUnreleased)
+                                    {
+                                        var res = [];
+                                        if(bAiring){
+                                            for(var i = 0; i < result.length; i++)
+                                            {
+                                                if(result[i].status != "Not yet aired")
+                                                {
+                                                    res.push(result[i]);
+                                                }
+                                            }
+                                        }else{
+                                            for(var i = 0; i < result.length; i++)
+                                            {
+                                                if(result[i].status == "Not yet aired")
+                                                {
+                                                    res.push(result[i]);
+                                                }
+                                            }
+                                        }
+                                        if(res.length <= 0) done(new Error("No results!"));
+                                        else done(null, res);
+                                    }
+                                    else done(null, result);
+                                },
+                                function sortResult(result, done)
+                                {
+                                    if(bRecent)
+                                    {
+                                        result.sort(firstBy(function(v){
+                                            var vnow = moment();
+                                            var vdate = moment(v.start_date);
+                                            return vnow.diff(vdate, 'days');
+                                        }));
+                                    }
+                                    else if(bPopular)
+                                    {
+                                        result.sort(firstBy(function(v){
+                                            var vscore = parseFloat(v.score);
+                                            return vscore;
+                                        }, -1));
+                                    }
+                                    else if(bRecent && bPopular)
+                                    {
+                                        result.sort(
+                                            firstBy(function(v){
+                                            var vnow = moment();
+                                            var vdate = moment(v.start_date);
+                                            //console.log("RECENTPOP: v->"+vdate);
+                                            return vnow.diff(vdate, 'days');
+                                        }).thenBy(function(v1, v2){
+                                            var vscore = parseFloat(v.score);
+                                            console.log("RECENTPOP SCORE: v->"+vscore);
+                                            return vscore;
+                                        }, -1));
+                                    }
+                                    else{
+                                        //do nothing :D
+                                    }
+                                    done(null, result);
+                                },
+                                function sendResult(result, done)
+                                {
+                                    var title = result[0].title;
+                                    var english = result[0].english;
+                                    var ep = result[0].episodes;
+                                    var score = result[0].score;
+                                    var type = result[0].type;
+                                    var status = result[0].status;
+                                    var synopsis = result[0].synopsis.toString();
+                                    var id = result[0].id;
+                                    var start_date = result[0].start_date;
+                                    if(start_date === "0000-00-00") start_date = "N/A";
+                                    var end_date = result[0].end_date;
+                                    if(end_date === "0000-00-00") end_date = "N/A";
+                                    synopsis = synopsis.replace(/<br \/>/g, " "); synopsis = synopsis.replace(/\[(.{1,10})\]/g, "");
+                                    synopsis = synopsis.replace(/\r?\n|\r/g, " "); synopsis = synopsis.replace(/\[(i|\/i)\]/g, "*"); synopsis = synopsis.replace(/\[(b|\/b)\]/g, "**");
+                                    synopsis = ent.decodeHTML(synopsis);
+                                    if (!msg.channel.isPrivate) {
+                                        if (synopsis.length > 400) { synopsis = synopsis.substring(0, 400); synopsis += "..."; }
+                                    }
+                                    var toSend = ":tv: " 
+                                    + "**" 
+                                    + title 
+                                    + " / " 
+                                    + english 
+                                    + "**\n**Type:** " 
+                                    + type 
+                                    + " **| Episodes:** " 
+                                    + ep 
+                                    + " **| Status:** " 
+                                    + status
+                                    + " **| Start:** "
+                                    + start_date
+                                    + " **| End:** "
+                                    + end_date
+                                    + " **| Score:** " 
+                                    + score 
+                                    + "\n" 
+                                    + synopsis 
+                                    + "\n**http://www.myanimelist.net/anime/" 
+                                    + id 
+                                    + "**";
+                                    bot.sendMessage(msg, toSend);
+                                    //bot.sendMessage(msg, ":tv: " + "**" + title + " / " + english + "**\n**Type:** " + type + " **| Episodes:** " + ep + " **| Status:** " + status + " **| Score:** " + score + "\n" + synopsis + "\n**http://www.myanimelist.net/anime/" + id + "**");
+                                    done(null);
+                                }
+                            ], function(err, result){
+                                //do nothing :D
+                                if(err) bot.sendMessage(msg, "The anime you're looking for isn't in MAL's db or probably doesn't exist yet. Tatsu-chan recommends the following course of action: Incepting a new idea into Urobutcher's head; Building a time machine etc.");
+                            });
+                        } else bot.sendMessage(msg, "\"" + strSearch + "\" not found. Blame the MAL search API", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
+                    });
+                    bot.stopTyping(msg.channel);
+                }
+			} else correctUsage("anime2", this.usage, msg, bot);
 		}
 	},
+	"anichar": {
+        desc: "Gets details on an anime character from AniList.Co. Do !anichar -h for more info",
+		usage: "<character_name> [optional -h/--anime]",
+		deleteCommand: true,
+		cooldown: 20,
+        shouldDisplay: false,
+		process: function(bot, msg, suffix) {
+			if (suffix) {
+                //add function for recent and popular, if both aren't set then do default recent
+                var argv = yargs.parse(suffix);
+                var strSearch = argv._.join('+');
+                if(argv.h || argv.help)
+                {
+                    var helpMsg = [];
+                    helpMsg.push(":information_source: Anime Character Search Help");
+                    helpMsg.push("**Usage**: !anichar <character_name> [optional -h]");
+                    helpMsg.push(":black_small_square:--help/-h | Display this help");
+					helpMsg.push(":black_small_square:--anime [anime name/part of name] | Filter characters starring in this anime. Enclose your terms in quotes");
+                    bot.sendMessage(msg.author, helpMsg);
+                    return;
+                }
+                else
+				{
+					var bFilter = false;
+					if(argv.anime) bFilter = !bFilter;
+					
+					var MALURL = "http://www.myanimelist.net";
+					var rUrl = MALURL + "/character.php?q="+strSearch;
+					
+					request(rUrl, function (error, response, html) {
+						if (!error && response.statusCode == 200) {
+							var $ = cheerio.load(html);
+							var charas = [];
+							$('tr').each(function(idx, ele){
+								if(idx != 0)
+								{
+									var a = $(this).
+									children().first().					//<td>
+									children().first().					//<div>
+									children().first().attr('href');	//<a>
+									//http://www.myanimelist.net/character/117873/Mira_Yurizaki
+									var chara_url = MALURL + a;
+									var chara_animeslist = $(this).children().last().text().trim();
+									var bFound = true;
+									chara_animeslist = chara_animeslist.substr(0, "Anime: ".length) + "\n -" + chara_animeslist.substr("Anime: ".length);
+									
+									if(bFilter)
+									{
+										bFound = false;
+										var strFilter = argv.anime;
+										console.log(strFilter.toLowerCase());
+										if(chara_animeslist.toLowerCase().indexOf(strFilter.toLowerCase(),0) > -1)
+										{
+											bFound = true;
+										}
+									}
+									
+									if(bFound)
+									{
+										var character_data = {
+											chara_imgurl : chara_url,
+											chara_name : $(this).children().first().next().text().trim(),
+											chara_animes : chara_animeslist
+											};
+										charas.push(character_data);
+									}
+								}
+							});
+							
+							if(charas.length > 0)
+							{
+								bot.sendMessage(msg, ":notebook_with_decorative_cover: \n**| Name:** " 
+								+ charas[0].chara_name 
+								+ "\n**| Appeared In:** \n- " 
+								+ charas[0].chara_animes.replace(/, /g, "\n- ")
+								+ "\n**| More: **" 
+								+ charas[0].chara_imgurl);
+							}
+							else{
+								bot.sendMessage(msg, "Could not locate your waifu/husbando on MAL :(");
+							}
+							
+						}
+					});
+				}
+				//bot.stopTyping(msg.channel);
+			}
+			else correctUsage("anichar", this.usage, msg, bot);
+		}
+    },
 	"manga": {
 		desc: "Gets details on a manga from MAL.",
 		usage: "<manga/novel name>",
@@ -1526,6 +1767,22 @@ var commands = {
 				}
 								
 				request(options, callback);
+			}
+		}
+	}
+	,
+	"katakanize": {
+		desc: "Converts your english to katakana for the lulz",
+		usage: "<english text>",
+		deleteCommand: false,
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+			if(suffix)
+			{
+				var argv = yargs.parse(suffix);
+				var result = jp_conv.convert(argv._.join(" "));
+				console.log(result);
+				bot.sendMessage(msg, msg.author.name + ", your katakana-ized text is: " + result.katakana);
 			}
 		}
 	}
