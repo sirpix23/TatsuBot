@@ -12,8 +12,6 @@
 	"allow_user_games": false,
 	"mal_user": "",
 	"mal_pass": "",
-	"anilistco_user": "",
-	"anilistco_secret": "",
 	"use_env": true,
 	"weather_api_key": "",
 	"osu_api_key": "",
