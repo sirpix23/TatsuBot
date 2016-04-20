@@ -1,8 +1,8 @@
 {
 	"name": "TatsuBot",
-	"version": "1.4.0",
+	"version": "0.9",
 	"description": "A Discord bot that does everything. Based off BrussellBot by Brussell98",
-	"author": "brussell98",
+	"author": "FZFalzar, David, brussell98",
 	"main": "BrussellBot.js",
 	"repository": {
 		"type": "git",
@@ -31,6 +31,14 @@
 		"readable-stream": ">=2.0.5",
 		"node-array-indexofobject": "danmactough/node-array-indexofobject#master",
 		"addressparser": ">=1.0.1",
+		"cheerio": "*",
+		"mysql": "*",
+		"moment": "*",
+		"thenby": "*",
+		"async": "*",
+		"yargs": "*",
+		"statman-stopwatch": "*",
+		"jp-conversion": "*",
 		"feedparser": ">=1.1.4"
 	}
 }
