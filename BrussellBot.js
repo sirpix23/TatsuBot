@@ -83,7 +83,7 @@ bot.on("message", msg => {
 	if (msg.author.id == bot.user.id) return;
 	if (msg.channel.isPrivate) {
 		if (/(^https?:\/\/discord\.gg\/[A-Za-z0-9]+$|^https?:\/\/discordapp\.com\/invite\/[A-Za-z0-9]+$)/.test(msg.content))
-			bot.sendMessage(msg.author, "Use this to bring me to your server: <https://discordapp.com/oauth2/authorize?&client_id=" + config.app_id + "&scope=bot&permissions=12659727>");
+			bot.sendMessage(msg.author, "**Tatsu-chan invite link: ** <https://discordapp.com/oauth2/authorize?&client_id=" + config.app_id + "&scope=bot&permissions=12659727> \n*I-I-Its not like I want to join your server or anything!* :flushed:");
 		else if (msg.content[0] !== config.command_prefix && msg.content[0] !== config.mod_command_prefix && !msg.content.startsWith('(eval) ')) {
 			if (pmCoolDown.hasOwnProperty(msg.author.id)) {
 				if (Date.now() - pmCoolDown[msg.author.id] > 3000) {
@@ -279,10 +279,11 @@ bot.on("serverCreated", server => {
 			setTimeout(()=>{bot.leaveServer(server);},1000);
 		} else {
 			var toSend = [];
-			toSend.push("👋🏻 Hmph! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "**");
+			toSend.push(":pouting_cat: Hmph! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "**");
 			toSend.push("You can use **`" + config.command_prefix + "help`** to see what I am capable of.");
 			toSend.push("Mod/Admin commands *including bot settings* can be viewed with **`" + config.mod_command_prefix + "help`**");
-			toSend.push("For help, feedback, bugs, info, go to **<http://tatsumaki.friday.cafe>**");
+			toSend.push("For help & info go to **<http://tatsumaki.friday.cafe>**");
+			toSend.push("*I-Its not like I wanted to be here! I was j-just told to!*");
 			bot.sendMessage(server.defaultChannel, toSend);
 			db.addServer(server);
 			db.addServerToTimes(server);
@@ -322,14 +323,16 @@ function reload() {
 function checkConfig() {
 	if (!config.token) { console.log(cWarn(" WARN ") + " Token not defined"); }
 	if (!config.app_id) { console.log(cWarn(" WARN ") + " App ID not defined"); }
-	if (!config.command_prefix || config.command_prefix.length !== 1) { console.log(cWarn(" WARN ") + " Prefix either not defined or more than one character"); }
-	if (!config.mod_command_prefix || config.mod_command_prefix.length !== 1) { console.log(cWarn(" WARN ") + " Mod prefix either not defined or more than one character"); }
+	if (!config.command_prefix || config.command_prefix.length < 1) { console.log(cWarn(" WARN ") + " Prefix either defined"); }
+	if (!config.mod_command_prefix || config.mod_command_prefix.length < 1) { console.log(cWarn(" WARN ") + " Mod prefix not defined"); }
 	if (!config.admin_id) { console.log(cYellow("Admin user's id") + " not defined in config"); }
 	if (!config.mal_user) { console.log(cYellow("MAL username") + " not defined in config"); }
 	if (!config.mal_pass) { console.log(cYellow("MAL password") + " not defined in config"); }
 	if (!config.weather_api_key) { console.log(cYellow("OpenWeatherMap API key") + " not defined in config"); }
 	if (!config.osu_api_key) { console.log(cYellow("Osu API key") + " not defined in config"); }
 	if (!config.imgur_client_id) { console.log(cYellow("Imgur client id") + " not defined in config"); }
+	if (!config.carbon_key) { console.log(cYellow("Carbon Key") + " not defined in config"); }
+	if (!config.yourls_sig_token) { console.log(cYellow("Yourls Sig Token") + " not defined in config"); }
 }
 
 function evaluateString(msg) {

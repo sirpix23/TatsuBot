@@ -124,7 +124,7 @@ var aliases = {
 	"h": "help", "commands": "help",
 	"backwards": "reverse",
 	"myid": "id",
-	"p": "tatsuping",
+	"p": "ping",
 	"poi?": "poi",
 	"join": "invite",
 	"joined": "joinedat",
@@ -156,50 +156,26 @@ var commands = {
 	"help": {
 		desc: "Sends a DM containing all of the commands. If a command is specified gives info on that command.",
 		usage: "[command]",
-		deleteCommand: true, shouldDisplay: false, cooldown: 5,
+		deleteCommand: true, shouldDisplay: false, cooldown: 1,
 		process: function(bot, msg, suffix) {
 			var toSend = [];
 			if (!suffix) {
-                Object.keys(commands).forEach(function(cmd,index,array)
-                {
-                    if (commands[cmd].hasOwnProperty("shouldDisplay")) {
-						if (commands[cmd].shouldDisplay) toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
-					} else toSend.push("`" + config.command_prefix + cmd + " " + commands[cmd].usage + "`\n		" + commands[cmd].desc);
-                });
-                
-                //required for proper? formatting of help message because
-                //sendMessage packets seem to not arrive in sequence, ending up jumbling our help message! wtf manz
-                //pagination added too so word limit for 1 message wont exceed
-                async.waterfall([
-                    function sendHeader(done)
-                    {
-                        var headers = [];
-                        headers.push("Use `" + config.command_prefix + "tatsuhelp <command name>` to get more info on a specific command.");
-                        headers.push("Mod commands can be found using `" + config.mod_command_prefix + "tatsuhelp`.");
-                        /*toSend.push("You can find the list online at **http://brussell98.github.io/bot/commands.html**");*/
-                        headers.push("**:information_source: Commands:**\n");
-                        bot.sendMessage(msg.author, headers).then(msg => done(null));
-                        //console.log("header sent");
-                        return;
-                    },
-                    function sendBody(done)
-                    {
-                        while(toSend.length / 10 > 0)
-                        {
-                            var temp = toSend.slice(0, 10);
-                            bot.sendMessage(msg.author, temp.join('\n'));
-                            toSend.splice(0, 10);
-                        }
-                        var temp = toSend.slice(0, toSend.length);
-                        bot.sendMessage(msg.author, temp);
-                        //console.log("body sent");
-                        done(null);
-                        return;
-                    }
-                ], function(err, res){
-                        //console.log("done sent");
-                        return;
-                    });
+				toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.\n");
+				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "help`.\n");
+				toSend.push("You can find the list online at **http://tatsumaki.friday.cafe**\n");
+				toSend.push("**Commands:**```glsl\n");
+				toSend.push("@" + bot.user.username + " text\n\t#Talk to the me! (cleverbot)");
+				toSend.push("N-Not that I *want* you to talk to me");
+				Object.keys(commands).forEach(cmd=>{
+					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
+						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+				});
+				toSend = toSend.join('');
+				if (toSend.length >= 1990) {
+					bot.sendMessage(msg.author, toSend.substr(0, 1990).substr(0, toSend.substr(0, 1990).lastIndexOf('\n\t')) + "```");
+					setTimeout(()=>{bot.sendMessage(msg.author, "```glsl" + toSend.substr(toSend.substr(0, 1990).lastIndexOf('\n\t')) + "```");}, 1000);
+				} else bot.sendMessage(msg.author, toSend + "```");
 			} else {
 				suffix = suffix.trim().toLowerCase();
 				if (commands.hasOwnProperty(suffix)) {
@@ -214,9 +190,10 @@ var commands = {
 		}
 	},
 	"server": {
-		desc: "Get a link to the **Friday Night Gaming Club** Discord server.",
+		desc: "Get a link to Tatsumaki-chan's support server.",
 		cooldown: 10, usage: "",
-		process: function(bot, msg) { bot.sendMessage(msg, ":house_with_garden: I reside here: **https://discord.gg/0jiPgpPH9wpNLFj7**"); }
+		process: function(bot, msg) { 
+			bot.sendMessage(msg, ":wrench: Looking for support? My support channel is here: **https://discord.gg/0xyZL4m5TyYTzVGY**\n\n :house_with_garden: My official residence (Private SEA-region social group): **http://discord.friday.cafe**"); }
 	},
 	"reverse": {
 		desc: "Returns the input backwards",
@@ -266,7 +243,7 @@ var commands = {
 		desc: "About me",
 		deleteCommand: true, cooldown: 10, usage: "",
 		process: function(bot, msg) {
-			bot.sendMessage(msg, ":id: **Hello, I'm Tatsu-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **I reside in:** https://discord.gg/0jiPgpPH9wpNLFj7\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "tatsuhelp` for a list of my commands!");
+			bot.sendMessage(msg, ":id: **I'm Tatsumaki-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **Official Support:** https://discord.gg/0xyZL4m5TyYTzVGY\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "help` for a list of my commands!\n" + ":black_small_square: **My Home**: http://www.friday.cafe");
 		}
 	},
 	"dice": {
@@ -805,9 +782,9 @@ var commands = {
                                 }
                             ], function(err, result){
                                 //do nothing :D
-                                if(err) bot.sendMessage(msg, "The anime you're looking for isn't in MAL's db or probably doesn't exist yet. Tatsu-chan recommends the following course of action: Incepting a new idea into Urobutcher's head; Building a time machine etc.");
+                                if(err) bot.sendMessage(msg, "Your anime/manga was not found!\n*I blame the MAL database for not having the anime you're looking for! I-Its not my fault okay?!* :rage:");
                             });
-                        } else bot.sendMessage(msg, "\"" + strSearch + "\" not found. Blame the MAL search API", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
+                        } else bot.sendMessage(msg, "\"" + strSearch + "\" not found! \n*I blame the MAL database for not having the anime you're looking for! I-Its not my fault okay?!* :rage:", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
                     });
                     bot.stopTyping(msg.channel);
                 }
@@ -815,11 +792,11 @@ var commands = {
 		}
 	},
 	"anichar": {
-        desc: "Gets details on an anime character from AniList.Co. Do !anichar -h for more info",
+        desc: "Gets details on an anime character from MAL. Do !anichar -h for more info",
 		usage: "<character_name> [optional -h/--anime]",
 		deleteCommand: true,
 		cooldown: 20,
-        shouldDisplay: false,
+        shouldDisplay: true,
 		process: function(bot, msg, suffix) {
 			if (suffix) {
                 //add function for recent and popular, if both aren't set then do default recent
@@ -893,7 +870,7 @@ var commands = {
 								+ charas[0].chara_imgurl);
 							}
 							else{
-								bot.sendMessage(msg, "Could not locate your waifu/husbando on MAL :(");
+								bot.sendMessage(msg, "I-I-Its not my fault your waifu or husbando couldn't be found! Blame the MAL database! :rage:");
 							}
 							
 						}
@@ -1105,9 +1082,9 @@ var commands = {
 		cooldown: 2,
 		process: function(bot, msg) {
 			var choice = Math.floor(Math.random() * 3);
-			if (choice == 0) bot.sendMessage(msg, "I picked **rock** :black_circle:");
-			else if (choice == 1) bot.sendMessage(msg, "I picked **paper** :scroll:");
-			else if (choice == 2) bot.sendMessage(msg, "I picked **scissors** :scissors:");
+			if (choice == 0) bot.sendMessage(msg, "I'm choosing **rock**! :black_circle:");
+			else if (choice == 1) bot.sendMessage(msg, "I'm choosing **paper**! :scroll:");
+			else if (choice == 2) bot.sendMessage(msg, "I'm picking **scissors**! :scissors:");
 		}
 	},
 	"weather": {
@@ -1184,13 +1161,13 @@ var commands = {
 		}
 	},
 	"ratewaifu": {
-		desc: "I'll rate your waifu",
+		desc: "I'll rate your waifu or you",
 		usage: "<name> [--s[earch]]",
 		deleteCommand: false, cooldown: 5,
 		process: function(bot, msg, suffix) {
 			if (!suffix) { correctUsage("ratewaifu", this.usage, msg, bot); return; }
-			if (msg.everyoneMentioned) { bot.sendMessage(msg, "Hey, " + msg.author.username.replace(/@/g, '@\u200b') + ", don't do that ok?", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
-			if (msg.mentions.length > 1) { bot.sendMessage(msg, "Multiple mentions aren't allowed!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
+			if (msg.everyoneMentioned) { bot.sendMessage(msg, "Hey, " + msg.author.username.replace(/@/g, '@\u200b') + ", don't do that ok?!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
+			if (msg.mentions.length > 1) { bot.sendMessage(msg, "I can't allow you to rate multiple people!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
 			if (suffix.toLowerCase().replace("-", " ") == bot.user.username.toLowerCase().replace("-", " ")) { bot.sendMessage(msg, "I'd rate myself **10/10**"); return; }
 			var fullName = "", user = false;
 			if (suffix.search(/--s(earch)?/i) > -1) {
@@ -1201,7 +1178,7 @@ var commands = {
 				if (results.length > 1) {
 					if (results.join('\n').length < 2000) bot.sendMessage(msg, results.join('\n'));
 					else bot.sendMessage(msg, results.join('\n').substr(0,2000));
-				} else bot.sendMessage(msg, "No names found matching that in the database");
+				} else bot.sendMessage(msg, "Looks like your waifu or husbando isn't on my list!");
 			} else {
 			if (!msg.channel.isPrivate) { user = msg.channel.server.members.find((member) => { return (member === undefined || member.username == undefined) ? false : member.username.toLowerCase() == suffix.toLowerCase() }); } else user = false;
 			if (!user && msg.mentions.length < 1) {
@@ -1209,7 +1186,7 @@ var commands = {
 				if (!fullName) { Object.keys(waifus).map(name=>{if (name.split(" ")[0].toLowerCase() == suffix.toLowerCase()) {fullName = name; return;}}); }
 				if (!fullName) { Object.keys(waifus).map(name=>{if (name.split(" ").length > 1) {for (var i = 1;i < name.split(" ").length;i++) {if (name.split(" ")[i].toLowerCase() == suffix.toLowerCase()) {fullName = name; return;}}}}); }
 			} else {
-				if (msg.mentions.length > 0) { fullName = msg.mentions[0].username; if (msg.mentions[0].username == bot.user.username) { bot.sendMessage(msg, "I'd rate myself **10/10**"); return; }
+				if (msg.mentions.length > 0) { fullName = msg.mentions[0].username; if (msg.mentions[0].username == bot.user.username) { bot.sendMessage(msg, "I'd rate myself **10/10** because I'm the best! :grin:"); return; }
 				} else if (user) fullName = user.username;
 			}
 			if (fullName) {
@@ -1259,8 +1236,8 @@ var commands = {
 			if (suffix && /^[^-].*/.test(suffix)) {
 				var time = (/(--day|--week|--month|--year|--all)/i.test(suffix)) ? /(--day|--week|--month|--year|--all)/i.exec(suffix)[0] : '--week';
 				var sendNSFW = (/ ?--nsfw/i.test(suffix)) ? true : false;
-				if (!msg.channel.isPrivate && sendNSFW && !ServerSettings.hasOwnProperty(msg.channel.server.id)) { bot.sendMessage(msg, "This server doesn't have NSFW images allowed"); return; }
-				if (!msg.channel.isPrivate && sendNSFW && !ServerSettings[msg.channel.server.id].allowNSFW) { bot.sendMessage(msg, "This server doesn't have NSFW images allowed"); return; }
+				if (!msg.channel.isPrivate && sendNSFW && !ServerSettings.hasOwnProperty(msg.channel.server.id)) { bot.sendMessage(msg, "This server doesn't have NSFW images allowed\n*I can't allow s-such pictures!* :flushed:"); return; }
+				if (!msg.channel.isPrivate && sendNSFW && !ServerSettings[msg.channel.server.id].allowNSFW) { bot.sendMessage(msg, "This server doesn't have NSFW images allowed\n*I can't allow s-such pictures!* :flushed:"); return; }
 				request({
 						url: 'https://api.imgur.com/3/gallery/r/' + suffix.replace(/(--day|--week|--month|--year|--all|--nsfw|\/?r\/| )/gi, '') + '/top/' + time.substring(2) + '/50',
 						headers: {'Authorization': 'Client-ID ' + IMGUR_CLIENT_ID}
@@ -1281,8 +1258,21 @@ var commands = {
 			} else correctUsage("image", this.usage, msg, bot);
 		}
 	},
+	/* for fixins
+	"rss": {
+		desc: "Displays all RSS commands",
+		usage: "",
+		cooldown: 4,
+        deleteCommand: true,
+        shouldDisplay: true,
+		process: function(bot, msg) {
+			//Note: If you are hosting this bot be sure to change the prefix description for this command because it doesn't update automatically.
+            bot.SendMessage(msg.channel, ":mailbox: **RSS Feed Commands:** t!rss_sub | t!rss_unsub | t!rss_list\nUse t!help COMMAND to find out more about each RSS command.");
+		}
+    },
+	*/
     "rss_sub": {
-		desc: "RSSFeed - Subscribe this channel to a specified RSS. For advanced options, do !rss_sub -h",
+		desc: "Subscribe this channel to a specified RSS feed. For advanced options, do !rss_sub -h | Note: Tags only work if the RSS feed you add has tags.",
 		usage: "<rss_url> [optional -h/-i/-e] [tags] [optional -i/-e] [tags]",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
@@ -1292,7 +1282,7 @@ var commands = {
             //if (!suffix) //catch if empty
             if(argv._ == '' && !argv.h)
 			{
-				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. http://yourwebsite.com/rss | Do !rss_sub -h for more info!");
+				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. www.website.com/rss | Do !rss_sub -h for more help!");
                 return;
 			}
             else if(argv.h)
@@ -1305,7 +1295,7 @@ var commands = {
                 helpMsg.push("\n\n**Flags:**\n-i flag - [OPTIONAL] Tags to **include** when pulling from a feed. RSSFeed will only pull items that contain input tags");
                 helpMsg.push("-e flag - [OPTIONAL] Tags to **exclude** when pulling from a feed. RSSFeed will only pull items that don't contain input tags");
                 helpMsg.push("Usage of both flags will cause RSSFeed to filter the latest item with INCLUDED tags **THEN** filter out if they contain EXCLUDED tags");
-                helpMsg.push("As a limitation, to change tags of a subscribed feed in your channel, you have to unsuscribe, then resuscribe with new tags (may change in future)");
+                helpMsg.push("As a limitation, to change tags of a subscribed feed in your channel, you have to unsubscribe, then resubscribe with new tags.");
                 bot.sendMessage(msg.author, helpMsg);
                 return;
             }
@@ -1416,13 +1406,13 @@ var commands = {
 		}
 	},
     "rss_unsub": {
-		desc: "RSSFeed - Unsuscribe this channel from an existing RSS",
+		desc: "Unsubscribe this channel from an existing RSS. You can view a list of subscribed RSS feeds using " + config.command_prefix + "rss_list",
 		usage: "<url>",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
             if (!suffix) //catch if empty
 			{
-				bot.sendMessage(msg.channel, ":newspaper: Specify a URL please! Use rss_list to find out a list of feeds (and their corresponding URLs) subscribed on this channeL!");
+				bot.sendMessage(msg.channel, ":newspaper: Specify a URL please! Use rss_list to find out a list of feeds (and their corresponding URLs) subscribed on this channel!");
 			}
 			else
 			{
@@ -1485,7 +1475,7 @@ var commands = {
 		}
 	},
     "rss_list": {
-		desc: "RSSFeed - Lists all subscribed RSS feeds on this channel",
+		desc: "Lists all subscribed RSS feeds on this channel",
 		usage: "",
 		cooldown: 4,
 		process: function(bot, msg) {
@@ -1499,7 +1489,7 @@ var commands = {
                     async.waterfall([
                         function sendHead(done)
                         {
-                            bot.sendMessage(msg.channel, ":eight_pointed_black_star: RSS Feeds subscribed for channel **"+msg.channel.name+"** in server **"+msg.channel.server.name+"**").then(msg => done(null));
+                            bot.sendMessage(msg.channel, ":mailbox: RSS Feeds subscribed for channel **"+msg.channel.name+"** in server **"+msg.channel.server.name+"**").then(msg => done(null));
                             return;
                         },
                         function sendBody(done)
@@ -1564,7 +1554,7 @@ var commands = {
                 }
                 else if(rating < 70)
                 {
-                    toSend.push("Tatsu-chan advises donning protective gear! **"+suffix+"** is infected with fegt ("+rating+"%)");
+                    toSend.push("Tatsu-chan dons protective gear. **"+suffix+"** is infected with fegt ("+rating+"%)");
                 }
                 else if(rating < 90)
                 {
@@ -1736,15 +1726,15 @@ var commands = {
                 }
                 if(rating < 100)
                 {
-                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is not a target for enforcement action. The trigger of Dominator will be locked.");
+                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is not a target for enforcement action. The trigger of the Dominator will be locked.");
                 }
                 else if(rating < 300)
                 {
-                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is classified as a latent criminal and is a target for enforcement action. Dominator is set to Non-Lethal Paralyzer mode.");
+                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is classified as a latent criminal and is a target for enforcement action. The Dominator is set to Non-Lethal Paralyzer mode.");
                 }
                 else
                 {
-                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** poses a serious threat to the society. Lethal force is authorized. Dominator will automatically switch to Lethal Eliminator.");
+                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** poses a serious threat to the society. Lethal force is authorized. The Dominator will automatically switch to Lethal Eliminator.");
                 }
                
                 bot.sendMessage(msg.channel, toSend);
@@ -1754,7 +1744,7 @@ var commands = {
 	"haveibeenpwned": {
 		desc: "Checks the 'Have I Been Pwned' database to see if your accounts have been breached. Sends details via private message.",
 		usage: "<Email Address>",
-		info: "Checks the 'Have I Been Pwned' database to see if your personal details have been leaked on the internet and sends the result via private message.\n\n:information_source: You can also privately use this command by sending Tatsu-chan the command via a private message.",
+		info: "Checks the 'Have I Been Pwned' database to see if your personal details have been leaked on the internet and sends the result via private message.",
 		deleteCommand: false,
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
@@ -1795,8 +1785,9 @@ var commands = {
 		}
 	},
 	"katakanize": {
-		desc: "Converts your english to katakana for the lulz",
+		desc: "Converts your english to Katakana.",
 		usage: "<english text>",
+		shouldDisplay: false,
 		deleteCommand: false,
 		cooldown: 10,
 		process: function(bot, msg, suffix) {

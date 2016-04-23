@@ -58,8 +58,8 @@ var commands = {
 		process: function(bot, msg, suffix) {
 			var toSend = [];
 			if (!suffix) {
-				toSend.push("Use `" + config.mod_command_prefix + "tatsuhelp <command name>` to get more info on a command.\n");
-				toSend.push("Normal commands can be found using `" + config.command_prefix + "tatsuhelp`.\n");
+				toSend.push("Use `" + config.mod_command_prefix + "help <command name>` to get more info on a command.\n");
+				toSend.push("Normal commands can be found using `" + config.command_prefix + "help`.\n");
 				toSend.push("You can find the list online at **http://tatsumaki.friday.cafe**\n");
 				toSend.push("**Commands:**```glsl\n");
 				Object.keys(commands).forEach(cmd=>{
@@ -94,7 +94,7 @@ var commands = {
 			else if (msg.author.id == config.admin_id) db.remInactive(bot, msg);
 		}
 	},
-	"tatsustats": {
+	"stats": {
 		desc: "Get the stats of the bot",
 		usage: "", cooldown: 30, deleteCommand: true,
 		process: function(bot, msg) {
@@ -111,7 +111,7 @@ var commands = {
 			} else { bot.sendMessage(msg, "Only server admins/mods can do this.", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); }
 		}
 	},
-	"tatsuplaying": {
+	"playing": {
 		desc: "Allows the bot owner to set the game.",
 		usage: "[game]", cooldown: 180, shouldDisplay: false, deleteCommand: true,
 		process: function(bot, msg, suffix) {
@@ -289,7 +289,7 @@ var commands = {
 			} else correctUsage("unmute", this.usage, msg, bot);
 		}
 	},
-	"tatsuleave": {
+	"leave": {
 		desc: "Leaves the server.",
 		usage: "", deleteCommand: true,
 		process: function(bot, msg) {
@@ -359,13 +359,13 @@ var commands = {
 		}
 	},
 	//Gotta get changelog channel set up first
-	/*
+	
 	"changelog": {
 		desc: "See recent changes to the bot",
 		deleteCommand: true, usage: "", cooldown: 30,
 		process: function(bot, msg) {
-			var chanelogChannel = bot.channels.get("id", "135527608564580353");
-			if (!chanelogChannel) { bot.sendMessage(msg, "The bot is not in the BrussellBot Official Server", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
+			var chanelogChannel = bot.channels.get("id", "173184347665334272");
+			if (!chanelogChannel) { bot.sendMessage(msg, "The bot is not in Tatsu-chan's home server!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
 			} else {
 				bot.getChannelLogs(chanelogChannel, 2, function(err, messages) {
 					if (err) { bot.sendMessage(msg, "Error getting changelogs: " + err); return; }
@@ -374,12 +374,13 @@ var commands = {
 					toSend.push(messages[1]);
 					toSend.push("━━━━━━━━━━━━━━━━━━━");
 					toSend.push(messages[0]);
+
 					bot.sendMessage(msg, toSend);
 				});
 			}
 		}
 	},
-	*/
+	
 	"color": {
 		desc: "Change a role's color",
 		usage: "<role name> <color in hex>",
@@ -617,12 +618,12 @@ var commands = {
 			}
 		}
 	},
-	"chaninfo": {
+	"channelinfo": {
         desc: "Show the channel information",
         usage: "",
 		cooldown: 4,
         deleteCommand: true,
-        shouldDisplay: false,
+        shouldDisplay: true,
 		process: function(bot, msg) {
             var toSend = [];
             toSend.push('Channel Name: ', msg.channel.name);
