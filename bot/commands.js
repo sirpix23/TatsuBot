@@ -149,7 +149,8 @@ var aliases = {
 	"f": "fortune",
 	"hibp": "haveibeenpwned", "pwned": "haveibeenpwned",
 	"e2k" : "katakanize", "katakana" : "katakanize",
-	"remind": "remindme", "reminder": "remindme"
+	"remind": "remindme", "reminder": "remindme",
+	"psycho": "psychopass"
 };
 
 var commands = {
@@ -162,7 +163,7 @@ var commands = {
 			if (!suffix) {
 				toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.\n");
 				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "help`.\n");
-				toSend.push("You can find the list online at **http://tatsumaki.friday.cafe**\n");
+				toSend.push("You can find the list online at **http://tatsumaki.friday.cafe**\n\n");
 				toSend.push("**Commands:**```glsl\n");
 				toSend.push("@" + bot.user.username + " text\n\t#Talk to the me! (cleverbot)");
 				toSend.push("N-Not that I *want* you to talk to me");
@@ -610,8 +611,8 @@ var commands = {
 	},
     "anime": {
         
-		desc: "Gets details on an anime from MAL. Do !anime -h for more info",
-		usage: "<anime name> [optional -r/-p/-a/-u/-h]",
+		desc: "Gets details on an anime from MAL. Do ``" + config.command_prefix + "anime --help`` for more info",
+		usage: "<anime name> [--help] [--recent | --popular | --airing | --unreleased]",
 		deleteCommand: true,
 		cooldown: 6,
 		process: function(bot, msg, suffix) {
@@ -626,15 +627,15 @@ var commands = {
                 if(argv.h || argv.help)
                 {
                     var helpMsg = [];
-                    helpMsg.push(":information_source: Anime Search Help");
-                    helpMsg.push("**Usage**: !anime <search_term> [optional --help/--recent/--popular/--airing/--unreleased]");
-                    helpMsg.push("\n\n**Flags:**\n [OPTIONAL] Tags to include to search/filter.");
-                    helpMsg.push(":black_small_square:--help/-h | Display this help");
-                    helpMsg.push(":black_small_square:--recent/-r | Sort by most recent and return first entry based on the Start_Date. May show unreleased unless otherwise specified");
-                    helpMsg.push(":black_small_square:--popular/-p | Sort by score and return first entry");
-                    helpMsg.push(":black_small_square:--airing/--aired/-a | Displays only animes currently airing/already aired");
-                    helpMsg.push(":black_small_square:--unreleased/-u | Displays only animes that aren't aired yet");
-                    helpMsg.push("NOTE: Using both -u and -a will pull the first result returned by the API unfiltered. Results may be shit :)")
+                    helpMsg.push(":information_source: **Anime Search Help\n**");
+                    helpMsg.push("**Usage**: ``"  + config.command_prefix + "anime <search_term> [ --recent | --popular | --airing | --unreleased]``");
+                    helpMsg.push("\n**Optional Flags:**\n Tags to include to search/filter.");
+                    helpMsg.push(":black_small_square:``--help / -h`` | Display this help");
+                    helpMsg.push(":black_small_square:``--recent / -r`` | Sort by most recent and return first entry based on the Start_Date. May show unreleased unless otherwise specified");
+                    helpMsg.push(":black_small_square:``--popular / -p`` | Sort by score and return first entry");
+                    helpMsg.push(":black_small_square:``--airing / --aired / -a`` | Displays only animes currently airing/already aired");
+                    helpMsg.push(":black_small_square:``--unreleased / -u`` | Displays only animes that aren't aired yet\n");
+                    helpMsg.push("NOTE: Using both ``--unreleased`` and ``--airing`` will pull the first result returned by the API unfiltered. Results may be inaccurate in this case.")
                     bot.sendMessage(msg.author, helpMsg);
                     return;
                 }
@@ -792,8 +793,8 @@ var commands = {
 		}
 	},
 	"anichar": {
-        desc: "Gets details on an anime character from MAL. Do !anichar -h for more info",
-		usage: "<character_name> [optional -h/--anime]",
+        desc: "Gets details on an anime character from MAL. Do ``"  + config.command_prefix + "anichar --help`` for more info",
+		usage: "<character name> [--help] [--anime] <anime name>",
 		deleteCommand: true,
 		cooldown: 20,
         shouldDisplay: true,
@@ -805,10 +806,10 @@ var commands = {
                 if(argv.h || argv.help)
                 {
                     var helpMsg = [];
-                    helpMsg.push(":information_source: Anime Character Search Help");
-                    helpMsg.push("**Usage**: !anichar <character_name> [optional -h]");
-                    helpMsg.push(":black_small_square:--help/-h | Display this help");
-					helpMsg.push(":black_small_square:--anime [anime name/part of name] | Filter characters starring in this anime. Enclose your terms in quotes");
+                    helpMsg.push(":information_source: **Anime Character Search Help**\n");
+                    helpMsg.push("**Usage**: ``" + config.command_prefix + "anichar <character name> [--anime] <\"anime name\">``");
+                    helpMsg.push(":black_small_square:``--help / -h`` | Display this help");
+					helpMsg.push(":black_small_square:``--anime <\"anime name\">`` | Filters characters starring in this anime. Enclose the name in quotes.");
                     bot.sendMessage(msg.author, helpMsg);
                     return;
                 }
@@ -1272,30 +1273,30 @@ var commands = {
     },
 	*/
     "rss_sub": {
-		desc: "Subscribe this channel to a specified RSS feed. For advanced options, do !rss_sub -h | Note: Tags only work if the RSS feed you add has tags.",
-		usage: "<rss_url> [optional -h/-i/-e] [tags] [optional -i/-e] [tags]",
+		desc: "Subscribe this channel to a specified RSS feed. For advanced options & help, do ``" + config.command_prefix + "rss_sub --help``\nNote: Tags only work if the RSS feed you want to add has tags.",
+		usage: "<rss_url> [--help] [--include | --exclude] [tags] [--include | --exclude] [tags]",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
             //var argv = parseArgs(suffix.split(' '), { string: 'i' }, { string: 'e' }, { string: '_' });
             var argv = yargs.parse(suffix);
             //console.log(argv);
             //if (!suffix) //catch if empty
-            if(argv._ == '' && !argv.h)
+            if(argv._ == '' && !argv.help)
 			{
-				bot.sendMessage(msg.channel, ":newspaper: Insert URL please! E.g. www.website.com/rss | Do !rss_sub -h for more help!");
+				bot.sendMessage(msg.channel, ":newspaper: Please add a URL! E.g. www.website.com/rss | Do ``" + config.command_prefix + "rss_sub --help`` for more help!");
                 return;
 			}
-            else if(argv.h)
+            else if(argv.help)
             {
                 var helpMsg = [];
-                helpMsg.push("RSSFeed Subscribe Help");
-                helpMsg.push("**Usage**: !rss_sub <url> [-h/-i/-e] [tags] [-i/-e] [tags]");
-                helpMsg.push("If -i or -e flag is specified, tags to include/exclude should be separated by a ; semicolon (Case-insensitive!). E.g games;music;lifestyle");
-                helpMsg.push("**IMPORTANT** If the feed is not categorized (does not contain category property), tags set will be ignored!")
-                helpMsg.push("\n\n**Flags:**\n-i flag - [OPTIONAL] Tags to **include** when pulling from a feed. RSSFeed will only pull items that contain input tags");
-                helpMsg.push("-e flag - [OPTIONAL] Tags to **exclude** when pulling from a feed. RSSFeed will only pull items that don't contain input tags");
-                helpMsg.push("Usage of both flags will cause RSSFeed to filter the latest item with INCLUDED tags **THEN** filter out if they contain EXCLUDED tags");
-                helpMsg.push("As a limitation, to change tags of a subscribed feed in your channel, you have to unsubscribe, then resubscribe with new tags.");
+                helpMsg.push(":information_source: **RSS Feed Subscribe Help\n**");
+                helpMsg.push("**Usage**: ``!rss_sub <url> [--help] [--include | --exclude] [tags] [--include | --exclude] [tags]``");
+                helpMsg.push("If ``--include`` or ``-exclude`` flag is specified, tags to include/exclude should be separated by a ``;`` semicolon (Case-insensitive!). E.g ``games;music;lifestyle``");
+                helpMsg.push("\n**Important:** *If the RSS feed you are adding does not contain category tags, the tags you set will be ignored!*")
+                helpMsg.push("\n**Optional Flags:**\n``-include <tags>`` - Tags to **include** when pulling from a feed. RSSFeed will only pull items that contain include tags");
+                helpMsg.push("``--exclude <tags>`` - Tags to **exclude** when pulling from a feed. RSSFeed will only pull items that don't contain exclude tags\n");
+                helpMsg.push("Usage of both flags will cause excluded tags to take precedence over included tags.");
+                helpMsg.push("*As a limitation, to change tags of a subscribed feed in your channel, you have to unsubscribe, then resubscribe with new tags.*");
                 bot.sendMessage(msg.author, helpMsg);
                 return;
             }
@@ -1303,8 +1304,8 @@ var commands = {
 			{
 				//var url = suffix;
                 var url = argv._[0];
-                var include_tags = (argv.i) ? (argv.i).toLowerCase() : "None";
-                var exclude_tags = (argv.e) ? (argv.e).toLowerCase() : "None";
+                var include_tags = (argv.include) ? (argv.include).toLowerCase() : "None";
+                var exclude_tags = (argv.exclude) ? (argv.exclude).toLowerCase() : "None";
                 //recode using async control flow
                 
                 async.waterfall([
@@ -1406,14 +1407,25 @@ var commands = {
 		}
 	},
     "rss_unsub": {
-		desc: "Unsubscribe this channel from an existing RSS. You can view a list of subscribed RSS feeds using " + config.command_prefix + "rss_list",
+		desc: "Unsubscribe this channel from an existing RSS. You can view a list of subscribed RSS feed urls using ``" + config.command_prefix + "rss_list``",
 		usage: "<url>",
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
+			var argv = yargs.parse(suffix);
+			
             if (!suffix) //catch if empty
 			{
-				bot.sendMessage(msg.channel, ":newspaper: Specify a URL please! Use rss_list to find out a list of feeds (and their corresponding URLs) subscribed on this channel!");
+				bot.sendMessage(msg.channel, ":newspaper: Specify a URL please! Use ``" + config.command_prefix + "rss_list`` to find out a list of feeds (and their corresponding URLs) subscribed on this channel!");
 			}
+			else if(argv.help)
+            {
+                var helpMsg = [];
+                helpMsg.push(":information_source: **RSS Feed Unsubscribe Help\n**");
+				helpMsg.push("Use ``" + config.command_prefix + "rss_list`` to view a list of subscribed RSS feed URLs.");
+                helpMsg.push("**Usage**: ``!rss_unsub <subscribed rss url>``");
+                bot.sendMessage(msg, helpMsg);
+                return;
+            }
 			else
 			{
 				var url = suffix;
@@ -1507,8 +1519,7 @@ var commands = {
             });
         }
     },
-    //DO NOT REMOVE THIS FUNCTION! THIS IS A GOOD FUCKING LEARNING POINT FOR ASYNCHRONOUS OPERATIONS
-    //FUCK JS THREADING NONSENSE
+    //Redundant function acting as our learning point for Async operations
     "dbtest": {
 		desc: "DBTest",
 		usage: "",
@@ -1524,7 +1535,7 @@ var commands = {
     "ratefegt": {
 		shouldDisplay: false,
         desc: "Tatsu-chan judges you.",
-        usage: "!ratefegt <@someone>",
+        usage: "<someone>",
 		cooldown: 4,
         deleteCommand: true,
 		process: function(bot, msg, suffix) {
@@ -1570,8 +1581,9 @@ var commands = {
         }
     },
 	"shorten": {
-		desc: "Shorten links with www.frid.li Friday Night Link Shortener",
-		usage: "<URL to Shorten, (Optional) Vanity Shortened URL> example: !shorten www.friday.cafe,fngshorturl",
+		desc: "Shorten links with www.frid.li link shortener",
+		usage: "<Link URL> [Vanity URL]",
+		info: "__Vanity URL:__ Will allow you to set a custom shorturl. Leave blank for randomized url. \nExample:" + config.command_prefix + "shorten www.friday.cafe fridayshort",
 		deleteCommand: true,
 		cooldown: 30,
 		process: function(bot, msg, suffix) {
@@ -1596,14 +1608,14 @@ var commands = {
 					if (!body.hasOwnProperty("code")){
 						var linkKeyword = body.url.keyword;
 						//Send Message
-						bot.sendMessage(msg.author, ":page_facing_up: Hi! Your shortened URL is: http://frid.li/" + body.url.keyword);
+						bot.sendMessage(msg.author, ":page_facing_up: Hey! Your shortened URL is: http://frid.li/" + body.url.keyword);
 						bot.sendMessage(msg, ":page_facing_up:" + msg.author + " your shortened URL has been sent to your inbox!");
 					}
 					//If link already exists
 					else if (body.code == "error:url"){
 						var linkKeyword = body.url.keyword;
 						bot.sendMessage(msg, ":page_facing_up:" + msg.author + " your shortened URL has been sent to your inbox!");
-						bot.sendMessage(msg.author, "Your link already exists! Here it is: " + "http://frid.li/" + body.url.keyword);
+						bot.sendMessage(msg.author, "*Baka!* Your link already exists! Here it is: " + "http://frid.li/" + body.url.keyword);
 					}
 					//If link contains reserved words
 					else if (body.code == "error:keyword"){
@@ -1618,6 +1630,49 @@ var commands = {
 					console.log(error);
 				} 
 			});
+		}
+	},
+	"haveibeenpwned": {
+		desc: "Checks the 'Have I Been Pwned' database to see if your accounts have been breached.",
+		usage: "<Email Address>",
+		info: "Checks the 'Have I Been Pwned' database to see if your personal details have been leaked on the internet and sends the result via private message.",
+		deleteCommand: false,
+		cooldown: 10,
+		process: function(bot, msg, suffix) {
+			if(suffix){
+				var request = require('request');
+			
+				var options = {
+					url: 'https://haveibeenpwned.com/api/v2/breachedaccount/' + suffix,
+					headers: {
+						'User-Agent': 'Tatsu-chan Discordapp Chat Bot'
+					}
+				};
+			
+				function callback(error, response, body) {
+					var standardMsg = ":information_source: Your HIBP details have been sent via private message."
+					//very minor todo: fix async flow
+					if (!error && response.statusCode == 200 && /^(([a-zA-Z0-9_.-])+@([a-zA-Z0-9_.-])+\.([a-zA-Z])+([a-zA-Z])+)?$/.test(suffix)) {
+							body = JSON.parse(body);
+							bot.sendMessage(msg, standardMsg);
+							bot.sendMessage(msg.author, ":information_source: You have some compromised accounts!")
+							for (var i = 0; i < body.length; i++) {							
+								bot.sendMessage(msg.author, "\n:exclamation: **" + body[i].Title + "**\n" + "**:black_small_square: Domain:** ``" +  body[i].Domain + "``\n" + ":black_small_square: **Date of Breach:** ``" + body[i].BreachDate + "``\n" + ":black_small_square: **Affected Accounts:** ``" + body[i].PwnCount + "``\n" + ":black_small_square: **Data Leaked: ** ``" + body[i].DataClasses + "``\n" + ":black_small_square: **Breach Verified?: ** ``" + body[i].IsVerified + "``\n");
+							}
+							bot.sendMessage(msg.author, ":information_source: More breach details are available at https://haveibeenpwned.com.")
+					}
+					else if (!/^(([a-zA-Z0-9_.-])+@([a-zA-Z0-9_.-])+\.([a-zA-Z])+([a-zA-Z])+)?$/.test(suffix)){
+						bot.sendMessage(msg, "W-W-Why would you enter an invalid email address?!");
+					}
+					else if (response.statusCode == 404 || 400){
+						bot.sendMessage(msg, standardMsg);
+						bot.sendMessage(msg.author, ":information_source: Good news - no pwnage found! No breached accounts and no pastes.")
+					}
+					else console.log(error);
+				}
+								
+				request(options, callback);
+			}
 		}
 	},
 	"fortune": {
@@ -1707,8 +1762,8 @@ var commands = {
 	},
     "psychopass": {
         shouldDisplay: false,
-        desc: "Sibyl System judges you.",
-        usage: "[user]",
+        desc: "Have the Sibyl System check someone's crime coefficient",
+        usage: "<user>",
         cooldown: 4,
         deleteCommand: true,
         process: function(bot, msg, suffix) {
@@ -1726,64 +1781,21 @@ var commands = {
                 }
                 if(rating < 100)
                 {
-                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is not a target for enforcement action. The trigger of the Dominator will be locked.");
+                    toSend.push("Crime Coefficient:("+rating+"%) **"+suffix+"** is not a target for enforcement action. The trigger of the Dominator will be locked.");
                 }
                 else if(rating < 300)
                 {
-                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** is classified as a latent criminal and is a target for enforcement action. The Dominator is set to Non-Lethal Paralyzer mode.");
+                    toSend.push("Crime Coefficient:("+rating+"%) **"+suffix+"** is classified as a latent criminal and is a target for enforcement action. The Dominator is set to Non-Lethal Paralyzer mode.");
                 }
                 else
                 {
-                    toSend.push("Crime Coefficent:("+rating+"%) **"+suffix+"** poses a serious threat to the society. Lethal force is authorized. The Dominator will automatically switch to Lethal Eliminator.");
+                    toSend.push("Crime Coefficient:("+rating+"%) **"+suffix+"** poses a serious threat to the society. Lethal force is authorized. The Dominator will automatically switch to Lethal Eliminator.");
                 }
                
                 bot.sendMessage(msg.channel, toSend);
             }
         }
     },
-	"haveibeenpwned": {
-		desc: "Checks the 'Have I Been Pwned' database to see if your accounts have been breached. Sends details via private message.",
-		usage: "<Email Address>",
-		info: "Checks the 'Have I Been Pwned' database to see if your personal details have been leaked on the internet and sends the result via private message.",
-		deleteCommand: false,
-		cooldown: 10,
-		process: function(bot, msg, suffix) {
-			if(suffix){
-				var request = require('request');
-			
-				var options = {
-					url: 'https://haveibeenpwned.com/api/v2/breachedaccount/' + suffix,
-					headers: {
-						'User-Agent': 'Tatsu-chan Discordapp Chat Bot'
-					}
-				};
-			
-				function callback(error, response, body) {
-					var standardMsg = ":information_source: Your HIBP details have been sent via private message."
-					//very minor todo: fix async flow
-					if (!error && response.statusCode == 200 && /^(([a-zA-Z0-9_.-])+@([a-zA-Z0-9_.-])+\.([a-zA-Z])+([a-zA-Z])+)?$/.test(suffix)) {
-							body = JSON.parse(body);
-							bot.sendMessage(msg, standardMsg);
-							bot.sendMessage(msg.author, ":information_source: You have some compromised accounts!")
-							for (var i = 0; i < body.length; i++) {							
-								bot.sendMessage(msg.author, "\n:exclamation: **" + body[i].Title + "**\n" + "**:black_small_square: Domain:** " +  body[i].Domain + "\n" + ":black_small_square: **Date of Breach:** " + body[i].BreachDate + "\n" + ":black_small_square: **Affected Accounts:** " + body[i].PwnCount + "\n" + ":black_small_square: **Data Leaked: ** " + body[i].DataClasses + "\n" + ":black_small_square: **Breach Verified?: ** " + body[i].IsVerified + "\n");
-							}
-							bot.sendMessage(msg.author, ":information_source: More breach details are available at https://haveibeenpwned.com.")
-					}
-					else if (!/^(([a-zA-Z0-9_.-])+@([a-zA-Z0-9_.-])+\.([a-zA-Z])+([a-zA-Z])+)?$/.test(suffix)){
-						bot.sendMessage(msg, "W-W-Why would you enter an invalid email address?!");
-					}
-					else if (response.statusCode == 404 || 400){
-						bot.sendMessage(msg, standardMsg);
-						bot.sendMessage(msg.author, ":information_source: Good news - no pwnage found! No breached accounts and no pastes.")
-					}
-					else console.log(error);
-				}
-								
-				request(options, callback);
-			}
-		}
-	},
 	"katakanize": {
 		desc: "Converts your english to Katakana.",
 		usage: "<english text>",
