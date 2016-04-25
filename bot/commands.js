@@ -168,10 +168,10 @@ var commands = {
 			var toSend = [];
 			if (!suffix) {
 				toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.\n");
-				toSend.push("Mod commands can be found using `" + config.mod_command_prefix + "help`.\n");
-				toSend.push("You can find the list online at **http://tatsumaki.friday.cafe**\n\n");
+				toSend.push("Mod commands & examples can be found using `" + config.mod_command_prefix + "help`.\n");
+				toSend.push("You can all commands & examples (very helpful!) at **http://tatsumaki.friday.cafe**\n\n");
 				toSend.push("**Commands:**```glsl\n");
-				toSend.push("@" + bot.user.username + " text\n\t#Talk to the me! (cleverbot)");
+				toSend.push("@" + bot.user.username + " text\n\t#Talk to the me! ");
 				toSend.push("N-Not that I *want* you to talk to me");
 				Object.keys(commands).forEach(cmd=>{
 					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
