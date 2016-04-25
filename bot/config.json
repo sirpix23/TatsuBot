@@ -19,5 +19,6 @@
 	"yourls_sig_token": "",
 	"banned_server_ids": [""],
 	"whitelist": [""],
-	"carbon_key": ""
+	"carbon_key": "",
+	"youtube_api_key": ""
 }
