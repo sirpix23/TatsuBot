@@ -503,7 +503,7 @@ var commands = {
 		}
 	},
 	"settings": {
-		desc: "Per-server settings. Docs: **http://brussell98.github.io/bot/serversettings.html**",
+		desc: "Per-server settings. Docs: **http://tatsumaki.friday.cafe/#settings**",
 		usage: "<enable/disable> <setting> | notify here | welcome <welcome message> | check",
 		deleteCommand: false, cooldown: 3,
 		process: function(bot, msg, suffix) {

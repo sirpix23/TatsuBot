@@ -279,7 +279,7 @@ bot.on("serverCreated", server => {
 			setTimeout(()=>{bot.leaveServer(server);},1000);
 		} else {
 			var toSend = [];
-			toSend.push(":pouting_cat: Hmph! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "**");
+			toSend.push("Hey! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "**");
 			toSend.push("You can use **`" + config.command_prefix + "help`** to see what I am capable of.");
 			toSend.push("Mod/Admin commands *including bot settings* can be viewed with **`" + config.mod_command_prefix + "help`**");
 			toSend.push("For help & info go to **<http://tatsumaki.friday.cafe>**");
