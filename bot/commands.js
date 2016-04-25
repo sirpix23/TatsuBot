@@ -783,9 +783,9 @@ var commands = {
                                 }
                             ], function(err, result){
                                 //do nothing :D
-                                if(err) bot.sendMessage(msg, "Your anime/manga was not found!\n*I blame the MAL database for not having the anime you're looking for! I-Its not my fault okay?!* :rage:");
+                                if(err) bot.sendMessage(msg, "Your anime/manga was not found!\n*I blame the MAL database for not having the anime you're looking for! I-Its not my fault okay?!*");
                             });
-                        } else bot.sendMessage(msg, "\"" + strSearch + "\" not found! \n*I blame the MAL database for not having the anime you're looking for! I-Its not my fault okay?!* :rage:", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
+                        } else bot.sendMessage(msg, "\"" + strSearch + "\" not found! \n*I blame the MAL database for not having the anime you're looking for! I-Its not my fault okay?!*", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); });
                     });
                     bot.stopTyping(msg.channel);
                 }
@@ -871,7 +871,7 @@ var commands = {
 								+ charas[0].chara_imgurl);
 							}
 							else{
-								bot.sendMessage(msg, "I-I-Its not my fault your waifu or husbando couldn't be found! Blame the MAL database! :rage:");
+								bot.sendMessage(msg, "I-I-Its not my fault your waifu or husbando couldn't be found! Blame the MAL database!");
 							}
 							
 						}
