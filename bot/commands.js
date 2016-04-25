@@ -14,7 +14,8 @@ var config = require("./config.json")
 	,firstBy = require('thenby')                    //thenby array sort lib, multicondition
 	,moment = require('moment')                     //Moment.js lib
 	,cheerio = require('cheerio')							//xray web scraper lib
-	,jp_conv = require('jp-conversion');
+	,jp_conv = require('jp-conversion')
+	,google = require('google');
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -136,7 +137,7 @@ var aliases = {
 	"poll": "strawpoll", "straw": "strawpoll",
 	"8": "8ball", "ball": "8ball",
 	"w": "weather",
-	"g": "google", "lmgtfy": "google",
+	"g": "google",
 	"number": "numberfacts", "num": "numberfacts",
 	"cat": "catfacts", "meow": "catfacts", "neko": "catfacts",
 	"imgur": "image", "im": "image",
@@ -1115,7 +1116,7 @@ var commands = {
 			});
 		}
 	},
-	"google": {
+	"lmgtfy": {
 		desc: "Let me Google that for you",
 		deleteCommand: true,
 		usage: "<search>",
@@ -1800,7 +1801,7 @@ var commands = {
 		desc: "Converts your english to Katakana.",
 		usage: "<english text>",
 		shouldDisplay: false,
-		deleteCommand: false,
+		deleteCommand: true,
 		cooldown: 10,
 		process: function(bot, msg, suffix) {
 			if(suffix)
@@ -1811,7 +1812,76 @@ var commands = {
 				bot.sendMessage(msg, msg.author.name + ", your katakana-ized text is: " + result.katakana);
 			}
 		}
-	}
+	},
+	
+	//from wishbot by hisw
+	"google": {
+		desc: "Google something & display the first search result",
+        usage: "<search terms>",
+        deleteCommand: true,
+        cooldown: 5,
+        type: "searches",
+        process: function(bot, msg, suffix) {
+            var search = "google";
+            if (suffix) {
+                search = suffix;
+            }
+            google(search, function(err, response) {
+                if (err || !response || !response.links || response.links.length < 1) {
+                    bot.sendMessage(msg, msg.author.name + ", your search resulted in an error! *Go find it on your own!*", function(error, sentMessage) {
+                        bot.deleteMessage(sentMessage, {
+                            "wait": 5000
+                        })
+                    });
+                } else {
+                    if (response.links[0].link === null) {
+                        for (i = 1; i < response.links.length; i++) {
+                            if (response.links[i].link !== null) {
+                                bot.sendMessage(msg, msg.author.name + "I searched for ``" + search + "``. Results: " + response.links[i].link);
+                                return;
+                            }
+                        }
+                    } else bot.sendMessage(msg, msg.author.name + "I searched for ``" + search + "``. Results: " + response.links[0].link);
+                }
+            })
+        }
+    },
+
+	//from wishbot by hisw
+	"urban": {
+		desc: "Look up the urban dictionary for slang words & phrases",
+        usage: "<search terms>",
+        delete: true,
+        cooldown: 5,
+        type: "searches",
+        process: function(bot, msg, suffix) {
+            var search = msg.content.split(" ").slice(1).join("+");
+            var apiURL = "http://api.urbandictionary.com/v0/define?term=" + search;
+            request(apiURL, function(error, response, body) {
+                if (error) {
+                    console.log(errorC(error));
+                }
+                if (!error && response.statusCode == 200) {
+                    body = JSON.parse(body);
+                    if (body.list.length === 0) {
+                        bot.sendMessage(msg, "No results for ``" + suffix + "``", function(error, sentMessage) {
+                            bot.deleteMessage(sentMessage, {
+                                "wait": 5000
+                            })
+                        });
+                    } else {
+                        var result = body.list[Math.floor(Math.random() * (body.list.length))]
+                        var toSend = "**" + result.word + "** by *" + result.author + "*\n\n";
+                        toSend += result.definition;
+                        toSend += "\n\n*" + result.example + "*";
+                        toSend += "\n:arrow_up:" + result.thumbs_up + " : :arrow_down:" + result.thumbs_down;
+                        toSend += "\n<" + result.permalink + ">";
+                        bot.sendMessage(msg, toSend);
+                    }
+                }
+            });
+        }
+    }
 };
 
 exports.commands = commands;

@@ -39,6 +39,7 @@
 		"yargs": "*",
 		"statman-stopwatch": "*",
 		"jp-conversion": "*",
-		"feedparser": ">=1.1.4"
+		"feedparser": ">=1.1.4",
+		"google": "^2.0.0"
 	}
 }
