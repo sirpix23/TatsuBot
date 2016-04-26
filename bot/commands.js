@@ -163,21 +163,87 @@ var commands = {
 	"help": {
 		desc: "Sends a DM containing all of the commands. If a command is specified gives info on that command.",
 		usage: "[command]",
-		deleteCommand: true, shouldDisplay: false, cooldown: 1,
+		deleteCommand: true, shouldDisplay: false, cooldown: 1, commandType: "standard",
 		process: function(bot, msg, suffix) {
+			
+			//Intialize array
 			var toSend = [];
+			
+			//rough implementation of categorization for help ;_;
 			if (!suffix) {
 				toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.\n");
 				toSend.push("Mod commands & examples can be found using `" + config.mod_command_prefix + "help`.\n");
 				toSend.push("You can all commands & examples (very helpful!) at **http://tatsumaki.friday.cafe**\n\n");
-				toSend.push("**Commands:**```glsl\n");
+				
+				toSend.push("**Do not include any brackets () or <> or [] when using any commands.**");
+				
+				toSend.push("**Standard Commands:**```glsl\n");
 				toSend.push("@" + bot.user.username + " text\n\t#Talk to the me! ");
 				toSend.push("N-Not that I *want* you to talk to me");
+				
 				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay")) {
+					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "standard") {
 						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else if (commands[cmd].commandType == "standard") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					
 				});
+				
+				toSend.push("```\n**Fun Commands - Do some fun stuff:**```glsl\n");
+				
+				Object.keys(commands).forEach(cmd=>{
+					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "fun") {
+						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else if (commands[cmd].commandType == "fun") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					
+				});
+				
+				toSend.push("```\n**Anime & Manga - Anime related:**```glsl\n");
+				
+				Object.keys(commands).forEach(cmd=>{
+					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "animanga") {
+						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else if (commands[cmd].commandType == "animanga") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					
+				});
+				
+				toSend.push("```\n**Search Commands - Search from within Discord:**```glsl\n");
+				
+				Object.keys(commands).forEach(cmd=>{
+					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "search") {
+						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else if (commands[cmd].commandType == "search") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					
+				});
+				
+				toSend.push("```\n**Utility Commands - Useful & convenient tools:**```glsl\n");
+				
+				Object.keys(commands).forEach(cmd=>{
+					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "utilities") {
+						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else if (commands[cmd].commandType == "utilities") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					
+				});
+				
+				toSend.push("```\n**RSS Feeds - Timely news updates:**```glsl\n");
+				
+				Object.keys(commands).forEach(cmd=>{
+					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "rss") {
+						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else if (commands[cmd].commandType == "rss") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					
+				});
+				
+				toSend.push("```\n**Interaction Commands - Interact with other users:**```glsl\n");
+				
+				Object.keys(commands).forEach(cmd=>{
+					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "interactions") {
+						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					} else if (commands[cmd].commandType == "interactions") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					
+				});
+				
+				
+				//Sends the help messages via DM
 				toSend = toSend.join('');
 				if (toSend.length >= 1990) {
 					bot.sendMessage(msg.author, toSend.substr(0, 1990).substr(0, toSend.substr(0, 1990).lastIndexOf('\n\t')) + "```");
@@ -198,38 +264,35 @@ var commands = {
 	},
 	"server": {
 		desc: "Get a link to Tatsumaki-chan's support server.",
-		cooldown: 10, usage: "",
+		cooldown: 10, usage: "", commandType: "standard",
 		process: function(bot, msg) { 
 			bot.sendMessage(msg, ":wrench: Looking for support? My support channel is here: **https://discord.gg/0xyZL4m5TyYTzVGY**\n\n :house_with_garden: My official residence (Private SEA-region social group): **http://discord.friday.cafe**"); }
 	},
 	"reverse": {
 		desc: "Returns the input backwards",
 		usage: "<text>", deleteCommand: true, cooldown: 5, shouldDisplay: false,
+		commandType: "fun",
 		process: function(bot, msg, suffix) {
 			if (suffix) bot.sendMessage(msg, "\u202e " + suffix);
 		}
 	},
 	"id": {
 		desc: "Returns your ID (or the channel's)",
-		usage: "[\"channel\"]", deleteCommand: true, cooldown: 2, shouldDisplay: false,
+		usage: "[\"channel\"]", deleteCommand: true, cooldown: 2, shouldDisplay: false, commandType: "standard",
 		process: function(bot, msg, suffix) {
 			if (suffix && suffix.trim().replace("\"", "") === "channel") bot.sendMessage(msg, "This channel's ID is: " + msg.channel.id);
 			else bot.sendMessage(msg, "Your ID is: " + msg.author.id);
 		}
 	},
 	"beep": {
-		desc: "boop", usage: "", deleteCommand: false, cooldown: 3, shouldDisplay: false,
+		desc: "boop", usage: "", deleteCommand: false, cooldown: 3, shouldDisplay: false, commandType: "standard",
 		process: (bot, msg) => { bot.sendMessage(msg, "boop", (e,sentMsg)=>{bot.updateMessage(sentMsg, "boop    |    Time taken: " + (sentMsg.timestamp - msg.timestamp) + "ms")}); }
 	},
-
-	"poi": {
-		desc: "poi", usage: "", deleteCommand: false, cooldown: 3, shouldDisplay: false,
-		process: (bot, msg) => { bot.sendMessage(msg, "Poi!"); }
-	},
+	
 	"ping": {
 		desc: "Replies with pong.",
 		info: "You can use this to check how long it take the bot to detect a message and respond.",
-		cooldown: 3, shouldDisplay: false, usage: "",
+		cooldown: 3, shouldDisplay: false, usage: "", commandType: "standard",
 		process: function(bot, msg) {
 			var n = Math.floor(Math.random() * 6);
 			if (n === 0) { bot.sendMessage(msg, "pong", (e,sentMsg)=>{bot.updateMessage(sentMsg, "pong    |    Time taken: " + (sentMsg.timestamp - msg.timestamp) + "ms")});
@@ -241,14 +304,14 @@ var commands = {
 		}
 	},
 	"invite": {
-		desc: "Get my invite link", usage: "", deleteCommand: true,
+		desc: "Get my invite link", usage: "", deleteCommand: true, commandType: "standard",
 		process: function(bot, msg) {
 			bot.sendMessage(msg, "Use this to bring me to your server: <https://discordapp.com/oauth2/authorize?&client_id=" + config.app_id + "&scope=bot&permissions=12659727>");
 		}
 	},
 	"about": {
 		desc: "About me",
-		deleteCommand: true, cooldown: 10, usage: "",
+		deleteCommand: true, cooldown: 10, usage: "", commandType: "standard",
 		process: function(bot, msg) {
 			bot.sendMessage(msg, ":id: **I'm Tatsumaki-chan!**\n:black_small_square: **My Authors:** Brussell, David, Edgar, Henry\n:black_small_square: **My Artist:** Foneza\n:black_small_square: **Library:** Discord.js\n:black_small_square: **Version:** " + version + "\n:black_small_square: **Official Support:** https://discord.gg/0xyZL4m5TyYTzVGY\n:black_small_square: **Info and Commands:** Use `" + config.command_prefix + "help` for a list of my commands!\n" + ":black_small_square: **My Home**: http://www.friday.cafe");
 		}
@@ -258,6 +321,7 @@ var commands = {
 		deleteCommand: true, cooldown: 3,
 		usage: "[(rolls)d(sides)]",
 		info: "__Format:__ The first number is how many to roll. The second is the number of sides.",
+		commandType: "fun",
 		process: function(bot, msg, suffix) {
 			var dice = (suffix && /\d+d\d+/.test(suffix)) ? suffix : "1d6";
 			request("https://rolz.org/api/?" + dice + ".json", function(err, response, body) {
@@ -275,6 +339,7 @@ var commands = {
 		deleteCommand: true,
 		usage: "[max]",
 		cooldown: 3,
+		commandType: "fun",
 		process: function(bot, msg, suffix) {
 			var roll = 100;
 			try {
@@ -286,6 +351,7 @@ var commands = {
 	"joinedat": {
 		desc: "Check when a user joined the server", usage: "[user]",
 		deleteCommand: true, cooldown: 5,
+		commandType: "standard",
 		process: function(bot, msg, suffix) {
 			if (msg.mentions.length > 0) {
 				if (msg.mentions.length > 4) bot.sendMessage(msg, "Limit of 4 users at once", (e, m)=>{bot.deleteMessage(m,{"wait": 10000});});
@@ -320,6 +386,7 @@ var commands = {
 		desc: "Gets info on the server or a user if mentioned.",
 		usage: "[username]",
 		deleteCommand: true, cooldown: 10,
+		commandType: "standard",
 		info: "If no suffix is provided it will get info on the server.\nIf a user is provided it will get info on them.\nSome stats include: roles, join date, avatar, creation date, members, region, and owner.",
 		process: function(bot, msg, suffix) {
 			if (!msg.channel.isPrivate) {
@@ -410,6 +477,7 @@ var commands = {
 		usage: "@mention OR username",
 		deleteCommand: true,
 		cooldown: 6,
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			if (msg.channel.isPrivate) {
 				if (msg.author.avatarURL != null) { bot.sendMessage(msg, "I can only get your avatar in a direct message. Here it is: " + msg.author.avatarURL); return; }
@@ -438,6 +506,7 @@ var commands = {
 		desc: "Makes a choice for you.",
 		usage: "<option 1>, <option 2>, [option], [option]",
 		cooldown: 4, deleteCommand: false,
+		commandType: "fun",
 		process: function(bot, msg, suffix) {
 			if (!suffix || /(.*), ?(.*)/.test(suffix) == false) { correctUsage("choose", this.usage, msg, bot); return; }
 			var choices = suffix.split(/, ?/);
@@ -454,6 +523,7 @@ var commands = {
 		usage: "end | enter | new [max entries] | <mentions to pick from> (pick from the users mentioned) | everyone",
 		deleteCommand: true, cooldown: 2,
 		info: "__new__: Start a lottery with the specified number as the max entries per user.\n__mentions__: Pick from the mentioned users.\n__everyone__: Pick a random person on the server.",
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			var currentchannel = msg.channel.id;
 			if (msg.everyoneMentioned || suffix.toLowerCase() == "everyone") {
@@ -524,6 +594,7 @@ var commands = {
 		desc: "Start / end a vote, or vote on one.",
 		usage: "+/- | new <topic> [-noautoend] | end",
 		deleteCommand: true,
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			var currentChannel = msg.channel.id;
 			if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do that in a direct message"); return; }
@@ -586,6 +657,7 @@ var commands = {
 		deleteCommand: true,
 		usage: "<option1>, <option2>, [option3], ...",
 		cooldown: 15,
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			if (suffix && /^[^, ](.*), ?(.*)[^, ]$/.test(suffix)) {
 				suffix = msg.cleanContent.substring(msg.cleanContent.indexOf(" ") + 1).split(/, ?/);
@@ -610,6 +682,7 @@ var commands = {
 		desc: "It's an 8ball...",
 		usage: "[question]",
 		cooldown: 4,
+		commandType: "fun",
 		process: function(bot, msg) {
 			var responses = ["It is certain", "Without a doubt", "You may rely on it", "Most likely", "Yes", "Signs point to yes", "Better not tell you now", "Don't count on it", "My reply is no", "My sources say no", "Outlook not so good", "Very doubtful"];
 			bot.sendMessage(msg, ":8ball: " + responses[Math.floor(Math.random() * (responses.length))]);
@@ -621,6 +694,7 @@ var commands = {
 		usage: "<anime name> [--help] [--recent | --popular | --airing | --unreleased]",
 		deleteCommand: true,
 		cooldown: 6,
+		commandType: "animanga",
 		process: function(bot, msg, suffix) {
 			if (suffix) {
                 //add function for recent and popular, if both aren't set then do default recent
@@ -803,7 +877,7 @@ var commands = {
 		usage: "<character name> [--help] [--anime] <anime name>",
 		deleteCommand: true,
 		cooldown: 20,
-        shouldDisplay: true,
+		commandType: "animanga",
 		process: function(bot, msg, suffix) {
 			if (suffix) {
                 //add function for recent and popular, if both aren't set then do default recent
@@ -893,6 +967,7 @@ var commands = {
 		usage: "<manga/novel name>",
 		deleteCommand: true,
 		cooldown: 6,
+		commandType: "animanga",
 		process: function(bot, msg, suffix) {
 			if (suffix) {
 				if (!MAL_USER || !MAL_PASS || MAL_USER == "" || MAL_PASS =="") { bot.sendMessage(msg, "MAL login not configured by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
@@ -928,6 +1003,7 @@ var commands = {
 	"coinflip": {
 		desc: "Flip a coin.", usage: "",
 		deleteCommand: true, cooldown: 2,
+		commandType: "fun",
 		process: function(bot, msg) {
 			if (Math.floor(Math.random() * (2)) == 0) bot.sendMessage(msg, "**" + msg.author.username.replace(/@/g, '@\u200b') + "** flipped a coin and got **Heads**");
 			else bot.sendMessage(msg, "**" + msg.author.username.replace(/@/g, '@\u200b') + "** flipped a coin and got **Tails**");
@@ -938,6 +1014,7 @@ var commands = {
 		usage: "[mode] sig [username] [hex color] | [mode] <user|best|recent> [username]",
 		info: "**sig:** Get an osu!next styled signature for the specified account. You may provide a hex color.\n**user:** Get the statistics for a user.\n**best:** Get the top 5 plays for a user (by PP).\n**recent:** Get the 5 most recent plays for a user.\n**mode:** Mode can be used if you want to get data for a mode other than osu. You can use mania, taiko, or ctb.",
 		deleteCommand: true, cooldown: 5,
+		commandType: "animanga",
 		process: function(bot, msg, suffix) {
 			if (!suffix) { correctUsage("osu", this.usage, msg, bot); return; }
 
@@ -1087,6 +1164,7 @@ var commands = {
 		desc: "Play Rock Paper Scissors",
 		usage: "<rock/paper/scissors>",
 		cooldown: 2,
+		commandType: "fun",
 		process: function(bot, msg) {
 			var choice = Math.floor(Math.random() * 3);
 			if (choice == 0) bot.sendMessage(msg, "I'm choosing **rock**! :black_circle:");
@@ -1099,6 +1177,7 @@ var commands = {
 		usage: "<City/City,Us> or <zip/zip,us>",
 		deleteCommand: true, cooldown: 7,
 		info: "Formats: `London` `London,UK` `10016` `10016,NY`",
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			if (OWM_API_KEY == null || OWM_API_KEY == "") { bot.sendMessage(msg, "⚠ No API key defined by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 			if (suffix) suffix = suffix.replace(" ", "");
@@ -1126,6 +1205,7 @@ var commands = {
 		deleteCommand: true,
 		usage: "<search>",
 		cooldown: 3,
+		commandType: "interactions",
 		process: function(bot, msg, suffix) {
 			if (!suffix) { bot.sendMessage(msg, "**http://www.lmgtfy.com/?q=bot-chan+commands**"); return; }
 			suffix = suffix.split(" ");
@@ -1138,6 +1218,7 @@ var commands = {
 		deleteCommand: true,
 		usage: "[number]",
 		cooldown: 2,
+		commandType: "fun",
 		process: function(bot, msg, suffix) {
 			var number = "random";
 			if (suffix && /^\d+$/.test(suffix)) { number = suffix; }
@@ -1156,6 +1237,7 @@ var commands = {
 		usage: "",
 		deleteCommand: true,
 		cooldown: 2,
+		commandType: "fun",
 		process: function(bot, msg) {
 			request("http://catfacts-api.appspot.com/api/facts", function(error, response, body) {
 				if (error) bot.sendMessage(msg, "Error: " + error, function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 10000}); });
@@ -1171,6 +1253,7 @@ var commands = {
 		desc: "I'll rate your waifu or you",
 		usage: "<name> [--s[earch]]",
 		deleteCommand: false, cooldown: 5,
+		commandType: "animanga",
 		process: function(bot, msg, suffix) {
 			if (!suffix) { correctUsage("ratewaifu", this.usage, msg, bot); return; }
 			if (msg.everyoneMentioned) { bot.sendMessage(msg, "Hey, " + msg.author.username.replace(/@/g, '@\u200b') + ", don't do that ok?!", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
@@ -1213,6 +1296,7 @@ var commands = {
 		desc: "Get a list of servers that the bot sees a user in.",
 		usage: "<user>",
 		deleteCommand: true, cooldown: 7,
+		commandType: "standard",
 		process: function(bot, msg, suffix) {
 			if (!msg.channel.isPrivate) {
 				if (msg.mentions.length > 0) {
@@ -1237,6 +1321,7 @@ var commands = {
 		usage: "<subreddit> [--nsfw] [--day | --week | --month | --year | --all]",
 		deleteCommand: false, cooldown: 10,
 		info: "Avalible parameters are:\n\t`--nsfw` for getting NSFW images\n\t`--month` or other ranges for time ranges",
+		commandType: "fun",
 		process: function(bot, msg, suffix) {
 			if (!IMGUR_CLIENT_ID || IMGUR_CLIENT_ID == "") { bot.sendMessage(msg, "⚠ No API key defined by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
 			if (/[\uD000-\uF8FF]/g.test(suffix)) { bot.sendMessage(msg, "Search cannot contain unicode characters.", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
@@ -1265,23 +1350,11 @@ var commands = {
 			} else correctUsage("image", this.usage, msg, bot);
 		}
 	},
-	/* for fixins
-	"rss": {
-		desc: "Displays all RSS commands",
-		usage: "",
-		cooldown: 4,
-        deleteCommand: true,
-        shouldDisplay: true,
-		process: function(bot, msg) {
-			//Note: If you are hosting this bot be sure to change the prefix description for this command because it doesn't update automatically.
-            bot.SendMessage(msg.channel, ":mailbox: **RSS Feed Commands:** t!rss_sub | t!rss_unsub | t!rss_list\nUse t!help COMMAND to find out more about each RSS command.");
-		}
-    },
-	*/
     "rss_sub": {
 		desc: "Subscribe this channel to a specified RSS feed. For advanced options & help, do ``" + config.command_prefix + "rss_sub --help``\nNote: Tags only work if the RSS feed you want to add has tags.",
 		usage: "<rss_url> [--help] [--include | --exclude] [tags] [--include | --exclude] [tags]",
 		cooldown: 10,
+		commandType: "rss",
 		process: function(bot, msg, suffix) {
             //var argv = parseArgs(suffix.split(' '), { string: 'i' }, { string: 'e' }, { string: '_' });
             var argv = yargs.parse(suffix);
@@ -1296,7 +1369,7 @@ var commands = {
             {
                 var helpMsg = [];
                 helpMsg.push(":information_source: **RSS Feed Subscribe Help\n**");
-                helpMsg.push("**Usage**: ``!rss_sub <url> [--help] [--include | --exclude] [tags] [--include | --exclude] [tags]``");
+                helpMsg.push("**Usage**: ``" + config.command_prefix + "rss_sub <url> [--help] [--include | --exclude] [tags] [--include | --exclude] [tags]``");
                 helpMsg.push("If ``--include`` or ``-exclude`` flag is specified, tags to include/exclude should be separated by a ``;`` semicolon (Case-insensitive!). E.g ``games;music;lifestyle``");
                 helpMsg.push("\n**Important:** *If the RSS feed you are adding does not contain category tags, the tags you set will be ignored!*")
                 helpMsg.push("\n**Optional Flags:**\n``-include <tags>`` - Tags to **include** when pulling from a feed. RSSFeed will only pull items that contain include tags");
@@ -1416,6 +1489,7 @@ var commands = {
 		desc: "Unsubscribe this channel from an existing RSS. You can view a list of subscribed RSS feed urls using ``" + config.command_prefix + "rss_list``",
 		usage: "<url>",
 		cooldown: 10,
+		commandType: "rss",
 		process: function(bot, msg, suffix) {
 			var argv = yargs.parse(suffix);
 			
@@ -1496,6 +1570,7 @@ var commands = {
 		desc: "Lists all subscribed RSS feeds on this channel",
 		usage: "",
 		cooldown: 4,
+		commandType: "rss",
 		process: function(bot, msg) {
             mysql_db.query('SELECT * FROM rss_feeds WHERE channel_id = ? AND server_id = ?', [msg.channel.id, msg.channel.server.id], function(err, results, fields){
                  if(err)
@@ -1526,24 +1601,26 @@ var commands = {
         }
     },
     //Redundant function acting as our learning point for Async operations
-    "dbtest": {
+    /*"dbtest": {
 		desc: "DBTest",
 		usage: "",
 		cooldown: 4,
         deleteCommand: true,
         shouldDisplay: false,
+		commandType: "standard",
 		process: function(bot, msg) {
             //PASS A FUNCTION THAT REQUIRES THE SUCCESS AS AN ARGUMENT
             //WHEN EVERYHTING IN TESTDB EXECUTES, CALL THIS FUNCTION (CALLBACK) TO FINALLY OUTPUT THE RESULT
             mysql_db.testDb( function(res){ bot.sendMessage(msg.channel, "DBConn: "+res+"! Check console for info") } );
 		}
-    },
+    },*/
     "ratefegt": {
 		shouldDisplay: false,
         desc: "Tatsu-chan judges you.",
         usage: "<someone>",
 		cooldown: 4,
-        deleteCommand: true,
+        deleteCommand: false,
+		commandType: "interactions",
 		process: function(bot, msg, suffix) {
             if (!suffix) //catch if empty
 			{
@@ -1592,6 +1669,7 @@ var commands = {
 		info: "__Vanity URL:__ Will allow you to set a custom shorturl. Leave blank for randomized url. \nExample:" + config.command_prefix + "shorten www.friday.cafe fridayshort",
 		deleteCommand: true,
 		cooldown: 30,
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			
 			if (YOURLS_SIG_TOKEN == null || YOURLS_SIG_TOKEN == "") { bot.sendMessage(msg, "⚠ No Yourls signature token defined by bot owner", function(erro, wMessage) { bot.deleteMessage(wMessage, {"wait": 8000}); }); return; }
@@ -1644,6 +1722,7 @@ var commands = {
 		info: "Checks the 'Have I Been Pwned' database to see if your personal details have been leaked on the internet and sends the result via private message.",
 		deleteCommand: false,
 		cooldown: 10,
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			if(suffix){
 				var request = require('request');
@@ -1687,6 +1766,7 @@ var commands = {
 		info: "Get a fortune from `yerkee.com/api`.\nThe avalible categories are: all, computers, cookie, definitions, miscellaneous, people, platitudes, politics, science, and wisdom.",
 		deleteCommand: false,
 		cooldown: 10,
+		commandType: "fun",
 		process: function(bot, msg, suffix) {
 			var cat = 'wisdom';
 			if (suffix && /^(all|computers|cookie|definitions|miscellaneous|people|platitudes|politics|science|wisdom)$/i.test(suffix.trim())) cat = suffix.trim();
@@ -1705,7 +1785,7 @@ var commands = {
 		desc: "Set reminders.",
 		usage: "remove <text in reminder> | list | <reminder> in <[0 days] [00 hours] [00 minutes] [000 seconds]>",
 		info: "__remove:__ Will remove a reminder containing the text input.\n__list:__ List your reminders.\n__add:__ Use the *<text> in <[0 days] [00 hours] [00 minutes] [000 seconds]>*  format.",
-		deleteCommand: false, cooldown: 5,
+		deleteCommand: false, cooldown: 5, commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			if (/^remove/i.test(suffix)) {
 
@@ -1767,11 +1847,11 @@ var commands = {
 		}
 	},
     "psychopass": {
-        shouldDisplay: false,
         desc: "Have the Sibyl System check someone's crime coefficient",
         usage: "<user>",
         cooldown: 4,
         deleteCommand: true,
+		commandType: "interactions",
         process: function(bot, msg, suffix) {
             if (!suffix) //catch if empty
             {
@@ -1802,12 +1882,14 @@ var commands = {
             }
         }
     },
-	"katakanize": {
+	//Use Bing or Google Translation API
+	/*"katakanize": {
 		desc: "Converts your english to Katakana.",
 		usage: "<english text>",
 		shouldDisplay: false,
 		deleteCommand: true,
 		cooldown: 10,
+		commandType: "utilities",
 		process: function(bot, msg, suffix) {
 			if(suffix)
 			{
@@ -1817,7 +1899,7 @@ var commands = {
 				bot.sendMessage(msg, msg.author.name + ", your katakana-ized text is: " + result.katakana);
 			}
 		}
-	},
+	},*/
 	
 	//start stuff from wishbot by hisw
 	"google": {
@@ -1825,7 +1907,7 @@ var commands = {
         usage: "<search terms>",
         deleteCommand: true,
         cooldown: 5,
-        type: "searches",
+        commandType: "search",
         process: function(bot, msg, suffix) {
             var search = "google";
             if (suffix) {
@@ -1856,7 +1938,7 @@ var commands = {
         usage: "<search terms>",
         delete: true,
         cooldown: 5,
-        type: "searches",
+        commandType: "search",
         process: function(bot, msg, suffix) {
             var search = msg.content.split(" ").slice(1).join("+");
             var apiURL = "http://api.urbandictionary.com/v0/define?term=" + search;
@@ -1890,7 +1972,7 @@ var commands = {
         usage: "<search terms>",
         deleteCommand: true,
         cooldown: 5,
-        type: "searches",
+        commandType: "search",
         process: function(bot, msg, suffix) {
             if (suffix) {
                 new Wiki().search(suffix, 1).then(function(data) {
@@ -1912,7 +1994,8 @@ var commands = {
         usage: "<search terms>",
         deleteCommand: true,
         cooldown: 5,
-        type: "searches",
+        commandType: "search",
+		category: "utilities",
         process: function(bot, msg, suffix) {
             youTube.search(suffix, 10, function(error, result) {
                 if (error || !result || !result.items || result.items.length < 1) {
@@ -1935,7 +2018,6 @@ var commands = {
         }
     }
 	
-	//end stuff from wishbot by hisw
 };
 
 exports.commands = commands;
