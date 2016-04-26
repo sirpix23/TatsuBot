@@ -122,6 +122,23 @@ function timeParser(ammount, mod) {
 	}
 }
 
+function saveCustomCommands() {
+    fs.writeFile(__dirname + '/../db/CustomCommands-temp.json', JSON.stringify(CustomCommands, null, 4), error => {
+        if (error) console.log(error);
+        else {
+            fs.stat(__dirname + '/../db/CustomCommands-temp.json', (err, stats) => {
+                if (err) console.log(err);
+                else if (stats["size"] < 5) console.log(errorC("There was a size mismatch error with CustomCommands"));
+                else {
+                    fs.rename(__dirname + '/../db/CustomCommands-temp.json', __dirname + '/../database/CustomCommands.json', e => {
+                        if (e) console.log(e);
+                    });
+                }
+            });
+        }
+    })
+}
+
 /*****************************\
 Commands (Check https://github.com/brussell98/BrussellBot/wiki/New-Command-Guide for how to make new ones)
 \*****************************/
@@ -169,86 +186,75 @@ var commands = {
 			//Intialize array
 			var toSend = [];
 			
-			//rough implementation of categorization for help ;_;
+			//gotta really optimize this frankenstein help ;_;
 			if (!suffix) {
-				toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.\n");
-				toSend.push("Mod commands & examples can be found using `" + config.mod_command_prefix + "help`.\n");
-				toSend.push("You can all commands & examples (very helpful!) at **http://tatsumaki.friday.cafe**\n\n");
 				
-				toSend.push("**Do not include any brackets () or <> or [] when using any commands.**");
+				var helpMsg = "__**Tatsu-chan Commands List**__\n\n*Don't include the example brackets when using commands!*\n\n**Standard -** ";
 				
-				toSend.push("**Standard Commands:**```glsl\n");
-				toSend.push("@" + bot.user.username + " text\n\t#Talk to the me! ");
-				toSend.push("N-Not that I *want* you to talk to me");
-				
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "standard") {
-						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else if (commands[cmd].commandType == "standard") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "standard") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						} else if (commands[cmd].commandType == "standard") helpMsg += "`" + cmd + "`  ";
+						
+					});
 					
-				});
-				
-				toSend.push("```\n**Fun Commands - Do some fun stuff:**```glsl\n");
-				
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "fun") {
-						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else if (commands[cmd].commandType == "fun") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					helpMsg += "\n**Fun -** ";
 					
-				});
-				
-				toSend.push("```\n**Anime & Manga - Anime related:**```glsl\n");
-				
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "animanga") {
-						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else if (commands[cmd].commandType == "animanga") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "fun") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						} else if (commands[cmd].commandType == "fun") helpMsg += "`" + cmd + "`  ";
+						
+					});
 					
-				});
-				
-				toSend.push("```\n**Search Commands - Search from within Discord:**```glsl\n");
-				
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "search") {
-						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else if (commands[cmd].commandType == "search") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					helpMsg += "\n**Anime -** ";
 					
-				});
-				
-				toSend.push("```\n**Utility Commands - Useful & convenient tools:**```glsl\n");
-				
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "utilities") {
-						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else if (commands[cmd].commandType == "utilities") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "animanga") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						}  else if (commands[cmd].commandType == "animanga") helpMsg += "`" + cmd + "`  ";
+						
+					});
 					
-				});
-				
-				toSend.push("```\n**RSS Feeds - Timely news updates:**```glsl\n");
-				
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "rss") {
-						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else if (commands[cmd].commandType == "rss") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					helpMsg += "\n**Search -** ";
 					
-				});
-				
-				toSend.push("```\n**Interaction Commands - Interact with other users:**```glsl\n");
-				
-				Object.keys(commands).forEach(cmd=>{
-					if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "interactions") {
-						if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
-					} else if (commands[cmd].commandType == "interactions") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "search") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						}  else if (commands[cmd].commandType == "search") helpMsg += "`" + cmd + "`  ";
+						
+					});
 					
-				});
+					helpMsg += "\n**Utility -** ";
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "utilities") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						}  else if (commands[cmd].commandType == "utilities") helpMsg += "`" + cmd + "`  ";
+						
+					});
+					
+					helpMsg += "\n**RSS Feeds -** ";
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "rss") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						}  else if (commands[cmd].commandType == "rss") helpMsg += "`" + cmd + "`  ";
+						
+					});
+					
+					helpMsg += "\n**Interactions -** ";
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "interactions") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						}  else if (commands[cmd].commandType == "interactions") helpMsg += "`" + cmd + "`  ";
+						
+					});
+					
+					helpMsg += "\n\nFor usage and info about these commands use `" + config.command_prefix + "help <command>`\nTo View the Mod Commmands Help use `" + config.mod_command_prefix + "help`\n\n*For a list of command descriptions, type* `" + config.command_prefix + "help describe`";
 				
-				
-				//Sends the help messages via DM
-				toSend = toSend.join('');
-				if (toSend.length >= 1990) {
-					bot.sendMessage(msg.author, toSend.substr(0, 1990).substr(0, toSend.substr(0, 1990).lastIndexOf('\n\t')) + "```");
-					setTimeout(()=>{bot.sendMessage(msg.author, "```glsl" + toSend.substr(toSend.substr(0, 1990).lastIndexOf('\n\t')) + "```");}, 1000);
-				} else bot.sendMessage(msg.author, toSend + "```");
+				bot.sendMessage(msg, helpMsg);
 			} else {
 				suffix = suffix.trim().toLowerCase();
 				if (commands.hasOwnProperty(suffix)) {
@@ -258,7 +264,87 @@ var commands = {
 					if (commands[suffix].hasOwnProperty("cooldown")) toSend.push("__Cooldown:__ " + commands[suffix].cooldown + " seconds");
 					if (commands[suffix].hasOwnProperty("deleteCommand")) toSend.push("*Can delete the activating message*");
 					bot.sendMessage(msg, toSend);
-				} else bot.sendMessage(msg, "Command `" + suffix + "` not found. Aliases aren't allowed.", (erro, wMessage)=>{ bot.deleteMessage(wMessage, {"wait": 10000}); });
+				} else if (suffix = "describe"){
+					toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.\n");
+					toSend.push("Mod commands & examples can be found using `" + config.mod_command_prefix + "help`.\n");
+					toSend.push("You can view all commands & examples (very helpful!) at **http://tatsumaki.friday.cafe**\n\n");
+					
+					toSend.push("**Do not include any brackets () or <> or [] when using any commands.**\n\n");
+					
+					toSend.push("**Standard Commands:**```glsl\n");
+					toSend.push("@" + bot.user.username + " text\n\t#Talk to me! ");
+					toSend.push("N-Not that I *want* you to talk to me");
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "standard") {
+							if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						} else if (commands[cmd].commandType == "standard") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						
+					});
+					
+					toSend.push("```\n**Fun Commands - Do some fun stuff:**```glsl\n");
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "fun") {
+							if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						} else if (commands[cmd].commandType == "fun") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						
+					});
+					
+					toSend.push("```\n**Anime & Manga - Anime related:**```glsl\n");
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "animanga") {
+							if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						} else if (commands[cmd].commandType == "animanga") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						
+					});
+					
+					toSend.push("```\n**Search Commands - Search from within Discord:**```glsl\n");
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "search") {
+							if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						} else if (commands[cmd].commandType == "search") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						
+					});
+					
+					toSend.push("```\n**Utility Commands - Useful & convenient tools:**```glsl\n");
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "utilities") {
+							if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						} else if (commands[cmd].commandType == "utilities") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						
+					});
+					
+					toSend.push("```\n**RSS Feeds - Timely news updates:**```glsl\n");
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "rss") {
+							if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						} else if (commands[cmd].commandType == "rss") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						
+					});
+					
+					toSend.push("```\n**Interaction Commands - Interact with other users:**```glsl\n");
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "interactions") {
+							if (commands[cmd].shouldDisplay) toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						} else if (commands[cmd].commandType == "interactions") toSend.push("\n" + config.command_prefix + cmd + " " + commands[cmd].usage + "\n\t#" + commands[cmd].desc);
+						
+					});
+					
+					
+					//Sends the help messages via DM
+					toSend = toSend.join('');
+					if (toSend.length >= 1990) {
+						bot.sendMessage(msg.author, toSend.substr(0, 1990).substr(0, toSend.substr(0, 1990).lastIndexOf('\n\t')) + "```");
+						setTimeout(()=>{bot.sendMessage(msg.author, "```glsl" + toSend.substr(toSend.substr(0, 1990).lastIndexOf('\n\t')) + "```");}, 1000);
+					} else bot.sendMessage(msg.author, toSend + "```");
+				}
+				else bot.sendMessage(msg, "Command `" + suffix + "` not found. Aliases aren't allowed.", (erro, wMessage)=>{ bot.deleteMessage(wMessage, {"wait": 10000}); });
 			}
 		}
 	},
@@ -692,7 +778,6 @@ var commands = {
         
 		desc: "Gets details on an anime from MAL. Do ``" + config.command_prefix + "anime --help`` for more info",
 		usage: "<anime name> [--help] [--recent | --popular | --airing | --unreleased]",
-		deleteCommand: true,
 		cooldown: 6,
 		commandType: "animanga",
 		process: function(bot, msg, suffix) {
@@ -875,7 +960,6 @@ var commands = {
 	"anichar": {
         desc: "Gets details on an anime character from MAL. Do ``"  + config.command_prefix + "anichar --help`` for more info",
 		usage: "<character name> [--help] [--anime] <anime name>",
-		deleteCommand: true,
 		cooldown: 20,
 		commandType: "animanga",
 		process: function(bot, msg, suffix) {
@@ -965,7 +1049,6 @@ var commands = {
 	"manga": {
 		desc: "Gets details on a manga from MAL.",
 		usage: "<manga/novel name>",
-		deleteCommand: true,
 		cooldown: 6,
 		commandType: "animanga",
 		process: function(bot, msg, suffix) {
@@ -1013,7 +1096,7 @@ var commands = {
 		desc: "Commands to fetch osu! data.",
 		usage: "[mode] sig [username] [hex color] | [mode] <user|best|recent> [username]",
 		info: "**sig:** Get an osu!next styled signature for the specified account. You may provide a hex color.\n**user:** Get the statistics for a user.\n**best:** Get the top 5 plays for a user (by PP).\n**recent:** Get the 5 most recent plays for a user.\n**mode:** Mode can be used if you want to get data for a mode other than osu. You can use mania, taiko, or ctb.",
-		deleteCommand: true, cooldown: 5,
+		cooldown: 5,
 		commandType: "animanga",
 		process: function(bot, msg, suffix) {
 			if (!suffix) { correctUsage("osu", this.usage, msg, bot); return; }
@@ -1850,7 +1933,7 @@ var commands = {
         desc: "Have the Sibyl System check someone's crime coefficient",
         usage: "<user>",
         cooldown: 4,
-        deleteCommand: true,
+        deleteCommand: false,
 		commandType: "interactions",
         process: function(bot, msg, suffix) {
             if (!suffix) //catch if empty
