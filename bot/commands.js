@@ -178,7 +178,7 @@ var aliases = {
 
 var commands = {
 	"help": {
-		desc: "Sends a DM containing all of the commands. If a command is specified gives info on that command.",
+		desc: "Displays most of the commands. If a command is specified gives info on that command.",
 		usage: "[command]",
 		deleteCommand: true, shouldDisplay: false, cooldown: 1, commandType: "standard",
 		process: function(bot, msg, suffix) {
@@ -253,8 +253,17 @@ var commands = {
 					});
 					
 					helpMsg += "\n\nFor usage and info about these commands use `" + config.command_prefix + "help <command>`\nTo View the Mod Commmands Help use `" + config.mod_command_prefix + "help`\n\n*For a list of command descriptions, type* `" + config.command_prefix + "help describe`";
+						
+						//Need to send pic first. Change this timer to async a bit later on 
+						bot.sendMessage(msg, "Getting help...");
+						bot.sendMessage(msg, {file: "./images/morehelp.gif"});		
+
+						setTimeout(() => {
+							bot.sendMessage(msg, helpMsg);
+						}, 2000); //10 minutes = 600,000, 2s = 2000
+						
+						
 				
-				bot.sendMessage(msg, helpMsg);
 			} else {
 				suffix = suffix.trim().toLowerCase();
 				if (commands.hasOwnProperty(suffix)) {
@@ -263,7 +272,15 @@ var commands = {
 					else if (commands[suffix].hasOwnProperty("desc")) toSend.push(commands[suffix].desc);
 					if (commands[suffix].hasOwnProperty("cooldown")) toSend.push("__Cooldown:__ " + commands[suffix].cooldown + " seconds");
 					if (commands[suffix].hasOwnProperty("deleteCommand")) toSend.push("*Can delete the activating message*");
-					bot.sendMessage(msg, toSend);
+					
+					if (commands[suffix].hasOwnProperty("helpGif")) {
+						bot.sendMessage(msg, "Getting help...", {file: "./images/" + commands[suffix].helpGif});
+					}
+					
+					setTimeout(() => {
+						bot.sendMessage(msg, toSend);
+					}, 2000); //10 minutes = 600,000, 2s = 2000
+
 				} else if (suffix = "describe"){
 					toSend.push("Use `" + config.command_prefix + "help <command name>` to get more info on a command.\n");
 					toSend.push("Mod commands & examples can be found using `" + config.mod_command_prefix + "help`.\n");
@@ -962,6 +979,7 @@ var commands = {
 		usage: "<character name> [--help] [--anime] <anime name>",
 		cooldown: 20,
 		commandType: "animanga",
+		helpGif: "anicharhelp.gif",
 		process: function(bot, msg, suffix) {
 			if (suffix) {
                 //add function for recent and popular, if both aren't set then do default recent
