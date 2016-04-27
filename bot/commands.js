@@ -234,21 +234,21 @@ var commands = {
 						
 					});
 					
-					helpMsg += "\n**RSS Feeds -** ";
-					
-					Object.keys(commands).forEach(cmd=>{
-						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "rss") {
-							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
-						}  else if (commands[cmd].commandType == "rss") helpMsg += "`" + cmd + "`  ";
-						
-					});
-					
 					helpMsg += "\n**Interactions -** ";
 					
 					Object.keys(commands).forEach(cmd=>{
 						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "interactions") {
 							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
 						}  else if (commands[cmd].commandType == "interactions") helpMsg += "`" + cmd + "`  ";
+						
+					});
+					
+					helpMsg += "\n**RSS Feeds -** ";
+					
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "rss") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						}  else if (commands[cmd].commandType == "rss") helpMsg += "`" + cmd + "`  ";
 						
 					});
 					
