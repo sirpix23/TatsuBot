@@ -484,6 +484,7 @@ if(rss_config.update_enable)
                         done(null, chan_dict);
                         return;
                     }
+					else console.log(err.message);
                 });
             },
             function doGetSendRSS(chan_dict, done)
@@ -505,56 +506,71 @@ if(rss_config.update_enable)
                             var fparse = new feed();
                             var data = null;
 							var http = require('http');
-							rssOffline = false;
-                            
+							var rss_loadtimer = new Stopwatch(true);
+							rssOffline = false;				//flag if URL can't be obtained
 							
 							//get header & if resolved, tell the parser which URL to parse
 							http.get(actual_url, function (response) {
 								if (response.statusCode < 200 || response.statusCode > 399) { // (I don't know if the 3xx responses come here, if so you'll want to handle them appropriately
-									console.log(url + "is offline!");
-									done(rssOffline = true);
+									console.log(url + "is offline! ECode: "+response.statusCode);
+									rssOffline = true;
+									done(null, rssOffline);	//return the rssOffline variable directly. we can check if it is  set by (rssOffline), then by its actual value using === (triple equals operator)
 									return;
 								}
 								else {
 									request(actual_url).pipe(fparse);
 								}
 							}).on('error', function (e) {
-								done(rssOffline = true);
+								rssOffline = true;
+								console.log("[RSSFeed] " + url + " - HTTP read error occured!");
+								done(null, rssOffline);
                                 return;
 							});
                             
                             //catch if URL cannot be read
                             fparse.on('error', function(error){
-                                done(new Error(error.message));
+								rssOffline = true;
+								rss_loadtimer.stop();
+								console.log("[RSSFeed] " + url + " - could not be read!("+ (Math.round(rss_loadtimer.read()) / 1000) + "s)");
+                                done(null, rssOffline);
                                 return;
                             });
                             
-                            fparse.on('readable', function(){
+                            fparse.on('readable', function(){	//we are reading into the middle of the stream. the read operation has not ended and data is still being downloaded
                                 var stream = this;
                                 data = stream.read();
                                 //done(null, stream.read());
                                 return;
                             });
                             
-                            fparse.on('end', function(){
+                            fparse.on('end', function(){		//we have finished reading to end of stream. send complete data down
                                 //console.log("EOS: "+actual_url);
+								rss_loadtimer.stop();
+								console.log("[RSSFeed] " + url + " - fetched!("+ (Math.round(rss_loadtimer.read()) / 1000) + "s)");
                                 done(null, data);
                                 return;
                             });
                         },
                         function sendRSSMessage(item, done)
                         {
-							
                             if(!item)
                             {
                                 done(new Error("Something went wrong!"));
                                 return;
-                            } 
-							else if(rssOffline == true){
-								done(new Error(url + " is offline!"));
-                                return;
+                            }
+							else if((item) && (item) === true){
+								//send a message to the server who has this URL.
+								async.each(channels_to_send, function(channel, done)
+                                {
+									bot.sendMessage(channel, "I-It's not like I didn't want to help or anything, blame **"+url+"** for being baka!\nError: A timeout occured when accessing this Feed.");
+									done(null);
+								},function(err){
+									done(new Error(url + " is offline!"));
+									return;
+                                });
+								return;
 							}
-							else
+							else if((item) && item != false)
                             {
                                 var pubdate_unix = moment(item.pubdate).unix();
                                 /*
@@ -564,7 +580,7 @@ if(rss_config.update_enable)
                                 //console.log(pubdate_unix + " LAST: " + lastupdatedtime_unix);
                                 if(pubdate_unix > lastupdatedtime_unix)         //if there is an update, the pubdate should be more than the last updated!
                                 {
-                                    console.log("[RSSFeed] " + url + " needs updating!");
+                                    //console.log("[RSSFeed] " + url + " needs updating!");
                                     //async.each(chan_dict[url].channels, function(channel, done)
                                     async.each(channels_to_send, function(channel, done)
                                     {
@@ -726,8 +742,12 @@ if(rss_config.update_enable)
                             });
                         }
                     ],function(err,res){
-                        if(err) done(err);
-                        else done(null);
+                        if(err)
+						{
+							//done(err);
+							console.log(err.message);	//log messages instead. causing an error previously would stop the entire async chain
+						}
+						done(null);
                         return;
                     });
                 },function(err){
