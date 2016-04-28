@@ -500,9 +500,24 @@ if(rss_config.update_enable)
                             var request = require("request");
                             var fparse = new feed();
                             var data = null;
+							var http = require('http');
+							rssOffline = false;
                             
-                            //tell the parser which URL to parse
-                            request(actual_url).pipe(fparse);
+							
+							//get header & if resolved, tell the parser which URL to parse
+							http.get(actual_url, function (response) {
+								if (response.statusCode < 200 || response.statusCode > 399) { // (I don't know if the 3xx responses come here, if so you'll want to handle them appropriately
+									console.log(url + "is offline!");
+									done(rssOffline = true);
+									return;
+								}
+								else {
+									request(actual_url).pipe(fparse);
+								}
+							}).on('error', function (e) {
+								done(rssOffline = true);
+                                return;
+							});
                             
                             //catch if URL cannot be read
                             fparse.on('error', function(error){
@@ -525,12 +540,17 @@ if(rss_config.update_enable)
                         },
                         function sendRSSMessage(item, done)
                         {
+							
                             if(!item)
                             {
                                 done(new Error("Something went wrong!"));
                                 return;
-                            }
-                            else
+                            } 
+							else if(rssOffline == true){
+								done(new Error(url + " is offline!"));
+                                return;
+							}
+							else
                             {
                                 var pubdate_unix = moment(item.pubdate).unix();
                                 /*
@@ -548,10 +568,11 @@ if(rss_config.update_enable)
                                             function parseCategories(done)
                                             {
                                                 var categories = [];
-                                                for(var i = 0; i < item.categories.length; i++)
-                                                {
-                                                    categories.push(item.categories[i].toLowerCase());
-                                                }
+												
+												for(var i = 0; i < item.categories.length; i++) {
+													categories.push(item.categories[i].toLowerCase());
+												}
+
                                                 //console.log(categories);
                                                 
                                                 if(categories.length > 0){
@@ -635,11 +656,14 @@ if(rss_config.update_enable)
                                                     return;
                                                 }
                                             },
+											//Disable sending publish date & time until client can set their own server time.
+											/*
                                             function sendHeader(done)
                                             {
                                                 bot.sendMessage(channel, ":clock3:"+item.pubdate).then(msg => done(null));
                                                 return;
                                             },
+											*/
                                             function sendBody(done)
                                             {
                                                 bot.sendMessage(channel, ":newspaper: **"+item.title+ "** - " + item.link+"\nTags: **"+item.categories+"**", function() {
