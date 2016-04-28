@@ -307,6 +307,7 @@ function reload() {
 	delete require.cache[require.resolve(__dirname + "/bot/cleverbot.js")];
 	delete require.cache[require.resolve(__dirname + "/bot/db.js")];
 	delete require.cache[require.resolve(__dirname + "/bot/remind.js")];
+	delete require.cache[require.resolve(__dirname + "/bot/mysql.js")];
 	config = 			require(__dirname + "/bot/config.json");
 	games = 			require(__dirname + "/bot/games.json");
 	versioncheck = 		require(__dirname + "/bot/versioncheck.js");
@@ -315,6 +316,8 @@ function reload() {
 	remind = 			require(__dirname + "/bot/remind.js");
 	try { commands = 	require(__dirname + "/bot/commands.js");
 	} catch (err) { console.log(cError(" ERROR ") + " Problem loading commands.js: " + err); }
+	try { mysql = 		require(__dirname + "/bot/mysql.js");
+	} catch (err) { console.log(cError(" ERROR ") + " Problem loading mysql.js: " + err); }
 	try { mod = 		require(__dirname + "/bot/mod.js");
 	} catch (err) { console.log(cError(" ERROR ") + " Problem loading mod.js: " + err); }
 	console.log(cBgGreen(" Module Reload ") + " Success");
@@ -333,6 +336,7 @@ function checkConfig() {
 	if (!config.imgur_client_id) { console.log(cYellow("Imgur client id") + " not defined in config"); }
 	if (!config.carbon_key) { console.log(cYellow("Carbon Key") + " not defined in config"); }
 	if (!config.yourls_sig_token) { console.log(cYellow("Yourls Sig Token") + " not defined in config"); }
+	if (!config.youtube_api_key) { console.log(cYellow("Youtube API key") + " not defined in config"); }
 }
 
 function evaluateString(msg) {

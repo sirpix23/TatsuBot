@@ -19,7 +19,8 @@ function createConnection() {
         port: mysql_settings.db_port,
         user: mysql_settings.db_username,
         password: mysql_settings.db_password,
-        database: mysql_settings.db_dbname
+        database: mysql_settings.db_dbname,
+		charset: 'utf8mb4_general_ci'
     });
 }
 
