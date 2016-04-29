@@ -1,7 +1,8 @@
 var config = require("./config.json")
 	,games = require("./games.json")
 	,version = require("../package.json").version
-	,db = require("./db.js");
+	,db = require("./db.js")
+	,normalCmd = require("./commands.js");
 
 //stuff for announce
 var confirmCodes = []
@@ -584,7 +585,7 @@ var commands = {
 				bot.sendMessage(msg, toSend);
 			}
 			if (suffix.trim().toLowerCase() == 'help') {
-				bot.sendMessage(msg, "Docs can be found here: **http://brussell98.github.io/bot/serversettings.html**");
+				bot.sendMessage(msg, "Docs can be found here: **http://tatsumaki.friday.cafe/#settings**");
 			}
 		}
 	},
@@ -633,7 +634,43 @@ var commands = {
             toSend.push('Server Name: ', msg.channel.server.name);
             bot.sendMessage(msg.channel, toSend);
         }
-    }
+    },
+	"disable": {
+		desc: "Have the bot disable a command",
+		usage: "",
+		cooldown: 3, deleteCommand: true,
+		process: function(bot, msg, suffix) {
+			if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do this in a PM!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
+			if (!msg.channel.permissionsOf(msg.author).hasPermission("manageServer") && msg.author.id != config.admin_id) { bot.sendMessage(msg, "You must have permission to manage the server!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
+			if (!Disabled.hasOwnProperty(msg.channel.server.id)) db.addServerToDisabled(msg.channel.server);
+			if (Disabled[msg.channel.server.id].disabledCmds.indexOf(suffix) > -1) bot.sendMessage(msg, 'This command is already disabled!', (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); });
+			else {
+				if (!normalCmd.commands.hasOwnProperty(suffix) || suffix == "help") {
+					bot.sendMessage(msg, 'This command does not exist or is not available for disabling!', (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); })
+					return;
+				}
+				else{
+				db.disableCmd(suffix, msg.channel.server.id);
+				bot.sendMessage(msg, "🚫 I'll disable this command. ");
+				}
+			}
+		}
+	},
+	"enable": {
+		desc: "Have the bot enable a command",
+		usage: "",
+		cooldown: 3, deleteCommand: true,
+		process: function(bot, msg, suffix) {
+			if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do this in a PM!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
+			if (!msg.channel.permissionsOf(msg.author).hasPermission("manageServer") && msg.author.id != config.admin_id) { bot.sendMessage(msg, "You must have permission to manage the server!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
+			if (!Disabled.hasOwnProperty(msg.channel.server.id)) db.addServerToDisabled(msg.channel.server);
+			if (Disabled[msg.channel.server.id].disabledCmds.indexOf(suffix) == -1) bot.sendMessage(msg, 'This command is not disabled!', (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); });
+			else {
+				db.enableCmd(suffix, msg.channel.server.id);
+				bot.sendMessage(msg, "✅ I'll enable this command. ");
+			}
+		}
+	}
 }
 
 exports.commands = commands;

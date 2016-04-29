@@ -2,10 +2,12 @@ var fs = require('fs')
 	,config = require("../bot/config.json");
 ServerSettings = require('../db/servers.json');
 Times = require('../db/times.json');
+Disabled = require('../db/disabled.json');
 var inactive = []
 	,whitelist = require('./config.json').whitelist;
 
-var updatedS = false, updatedT = false;
+//Timer for updating config files
+var updatedS = false, updatedT = false, updatedD = false;
 setInterval(() => {
 	if (updatedS) {
 		updatedS = false;
@@ -15,8 +17,30 @@ setInterval(() => {
 		updatedT = false;
 		updateTimes();
 	}
+	if (updatedD) {
+		updatedD = false;
+		updateDisabled();
+	}
 }, 60000)
 
+//Function for saving to disabled.json
+function updateDisabled() {
+	fs.writeFile(__dirname + '/../db/disabled-temp.json', JSON.stringify(Disabled), error=>{
+		if (error) console.log(error)
+		else {
+			fs.stat(__dirname + '/../db/disabled-temp.json', (err, stats)=>{
+				if (err) console.log(err)
+				else if (stats["size"] < 5) console.log('Prevented server settings database from being overwritten');
+				else {
+					fs.rename(__dirname + '/../db/disabled-temp.json', __dirname + '/../db/disabled.json', e=>{if(e)console.log(e)});
+					if (debug) console.log(cDebug(" DEBUG ") + " Updated disabled.json");
+				}
+			});
+		}
+	})
+}
+
+//Function for saving to servers.json
 function updateServers() {
 	fs.writeFile(__dirname + '/../db/servers-temp.json', JSON.stringify(ServerSettings), error=>{
 		if (error) console.log(error)
@@ -33,6 +57,7 @@ function updateServers() {
 	})
 }
 
+//Function for saving to times.json
 function updateTimes() {
 	fs.writeFile(__dirname + '/../db/times-temp.json', JSON.stringify(Times), error=>{
 		if (error) console.log(error)
@@ -49,11 +74,13 @@ function updateTimes() {
 	})
 }
 
+//Check if server is in times
 exports.serverIsNew = function(server) {
 	if (Times.hasOwnProperty(server.id)) return false;
 	return true;
 }
 
+//Check if server is in server.json, if not add new configs
 exports.addServer = function(server) {
 	if (!server) return;
 	if (!ServerSettings.hasOwnProperty(server.id)) {
@@ -62,6 +89,7 @@ exports.addServer = function(server) {
 	}
 };
 
+//Changes settings
 exports.changeSetting = function(key, value, serverId) {
 	if (!key || value == undefined || value == null || !serverId) return;
 	switch (key) {
@@ -81,6 +109,7 @@ exports.changeSetting = function(key, value, serverId) {
 	updatedS = true;
 };
 
+//Ignore channel
 exports.ignoreChannel = function(channelId, serverId) {
 	if (!channelId || !serverId) return;
 	if (ServerSettings[serverId].ignore.indexOf(channelId) == -1) {
@@ -89,11 +118,31 @@ exports.ignoreChannel = function(channelId, serverId) {
 	}
 };
 
+//Unignore channel
 exports.unignoreChannel = function(channelId, serverId) {
 	if (!channelId || !serverId) return;
 	if (ServerSettings[serverId].ignore.indexOf(channelId) > -1) {
 		ServerSettings[serverId].ignore.splice(ServerSettings[serverId].ignore.indexOf(channelId), 1);
 		updatedS = true;
+	}
+};
+
+//Disable Command
+exports.disableCmd = function(suffix, serverId) {
+	if (!suffix || !serverId) return;
+	console.log(suffix, serverId);
+	if (Disabled[serverId].disabledCmds.indexOf(suffix) == -1) {
+		Disabled[serverId].disabledCmds.push(suffix);
+		updatedD = true;
+	}
+};
+
+//Enable Command
+exports.enableCmd = function(suffix, serverId) {
+	if (!suffix || !serverId) return;
+	if (Disabled[serverId].disabledCmds.indexOf(suffix) > -1) {
+		Disabled[serverId].disabledCmds.splice(Disabled[serverId].disabledCmds.indexOf(suffix), 1);
+		updatedD = true;
 	}
 };
 
@@ -117,7 +166,7 @@ exports.checkServers = function(bot) {
 					toSend.push("👋🏻 Hi! I'm **" + bot.user.username.replace(/@/g, '@\u200b') + "**");
 					toSend.push("You can use `" + config.command_prefix + "help` to see what I can do. Mods can use `" + config.mod_command_prefix + "help` for mod commands.");
 					toSend.push("Mod/Admin commands *including bot settings* can be viewed with `" + config.mod_command_prefix + "help`");
-					toSend.push("For help, feedback, bugs, info, changelogs, etc. go to **<https://discord.gg/0kvLlwb7slG3XCCQ>**");
+					toSend.push("For help, feedback, bugs, info, changelogs, etc. go to **<https://discord.gg/0xyZL4m5TyYTzVGY>**");
 					bot.sendMessage(server.defaultChannel, toSend);
 				}
 				Times[server.id] = now;
@@ -133,6 +182,7 @@ exports.checkServers = function(bot) {
 	if (debug) console.log(cDebug(" DEBUG ") + " Checked for inactive servers");
 };
 
+//Remove inactive servers
 exports.remInactive = function(bot, msg, delay) {
 	if (!bot || !msg) return;
 	if (inactive.length == 0) {
@@ -166,6 +216,7 @@ exports.remInactive = function(bot, msg, delay) {
 	}, delay || 10000);
 };
 
+//Leave server, delete from TImes.json
 exports.handleLeave = function(server) {
 	if (!server || !server.id) return;
 	if (Times.hasOwnProperty(server.id)) {
@@ -175,6 +226,7 @@ exports.handleLeave = function(server) {
 	}
 };
 
+//Add server to times.json if not in times
 exports.addServerToTimes = function(server) {
 	if (!server || !server.id) return;
 	if (!Times.hasOwnProperty(server.id)) {
@@ -183,6 +235,7 @@ exports.addServerToTimes = function(server) {
 	}
 };
 
+//Add server to config if not in config
 function addServer(server) {
 	if (!server) return
 	if (!ServerSettings.hasOwnProperty(server.id)) {
@@ -191,6 +244,7 @@ function addServer(server) {
 	}
 }
 
+//Updates timestamp
 exports.updateTimestamp = function(server) {
 	if (!server || !server.id) return;
 	if (Times.hasOwnProperty(server.id)) {
@@ -199,3 +253,20 @@ exports.updateTimestamp = function(server) {
 	}
 	if (inactive.indexOf(server.id) >= 0) inactive.splice(inactive.indexOf(server.id), 1);
 };
+
+//Add server to disabled.json if not in the disabled commands config
+exports.addServerToDisabled = function(server) {
+	if (!server || !server.id) return;
+	if (!Disabled.hasOwnProperty(server.id)) {
+		Disabled[server.id] = {"disabledCmds":[]};
+		updatedD = true;
+	}
+};
+
+function addServerToDisabled(server) {
+	if (!server || !server.id) return
+	if (!Disabled.hasOwnProperty(server.id)) {
+		Disabled[server.id] = {"disabledCmds":[]};
+		updatedD = true;
+	}
+}

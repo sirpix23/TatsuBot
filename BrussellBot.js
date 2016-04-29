@@ -5,6 +5,7 @@ var commands = require("./bot/commands.js")
 	,config = require("./bot/config.json")
 	,games = require("./bot/games.json")
 	,versioncheck = require("./bot/versioncheck.js")
+	,Disabled = require("./db/disabled.json")
 	,discord = require("discord.js")
 	,cleverbot = require("./bot/cleverbot.js").cleverbot
 	,db = require("./bot/db.js")
@@ -150,6 +151,7 @@ bot.on("message", msg => {
 	//console.log(msg.content.startsWith(config.command_prefix) || msg.content.startsWith(config.mod_command_prefix));
 	
 	if (msg.content.startsWith(config.command_prefix)) {
+	if (Disabled[msg.channel.server.id].disabledCmds.indexOf(cmd) > -1) return;
 		if (commands.commands.hasOwnProperty(cmd)) execCommand(msg, cmd, suffix, "normal");
 		else if (commands.aliases.hasOwnProperty(cmd)) {
 			if (!msg.channel.isPrivate) db.updateTimestamp(msg.channel.server);
@@ -287,6 +289,7 @@ bot.on("serverCreated", server => {
 			bot.sendMessage(server.defaultChannel, toSend);
 			db.addServer(server);
 			db.addServerToTimes(server);
+			db.addServerToDisabled(server);
 		}
 	}
 });
