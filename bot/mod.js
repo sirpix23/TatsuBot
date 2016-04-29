@@ -300,6 +300,7 @@ var commands = {
 					setTimeout(()=>{msg.channel.server.leave()}, 2000);
 					console.log(cYellow("I've left a server on request of " + msg.sender.username + ". ") + "I'm only in " + bot.servers.length + " servers now.");
 					db.handleLeave(msg.channel.server);
+					db.rss_handleLeave(msg.channel.server);
 				} else {
 					bot.sendMessage(msg, "You can't tell me what to do! *(You need permission to kick users in this channel)*");
 					console.log(cYellow("Non-privileged user: " + msg.sender.username) + " tried to make me leave a server.");

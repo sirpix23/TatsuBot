@@ -271,6 +271,8 @@ bot.on("presence", (userOld, userNew) => {
 bot.on("serverDeleted", objServer => {
 	console.log(cUYellow("Left server") + " " + objServer.name);
 	db.handleLeave(objServer);
+	//add handler to clean up rss db
+	db.rss_handleLeave(objServer);
 });
 
 bot.on("serverCreated", server => {
@@ -352,6 +354,7 @@ function evaluateString(msg) {
 	if (result && typeof result !== 'object') bot.sendMessage(msg, "`Compute time: " + (timeTaken - msg.timestamp) + "ms`\n" + result);
 	console.log("Result: " + result);
 }
+
 
 setInterval(() => {
 	bot.setPlayingGame(games[Math.floor(Math.random() * (games.length))]);
@@ -576,7 +579,21 @@ if(rss_config.update_enable)
 							}
 							else if((item) && item != false)
                             {
-                                var pubdate_unix = moment(item.pubdate).unix();
+								var pubdate_unix = 0;
+								//MOST RSS FEEDS SHOULD HAVE THIS
+								if(item.pubdate)
+								{
+									pubdate_unix = moment(item.pubdate).unix();
+								}
+								else	//for the faggot minority using nonstandard RSS
+								{
+									//console.log(item);
+									if(item.meta.pubdate)
+									{
+										pubdate_unix = moment(item.meta.pubdate).unix();
+									}
+								}
+                                
                                 /*
                                 if(item.categories){
                                     console.log(item.categories);

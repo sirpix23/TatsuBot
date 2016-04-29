@@ -6,6 +6,9 @@ Disabled = require('../db/disabled.json');
 var inactive = []
 	,whitelist = require('./config.json').whitelist;
 
+var mysql_db = require('./mysql.js');
+var async = require('async');
+
 //Timer for updating config files
 var updatedS = false, updatedT = false, updatedD = false;
 setInterval(() => {
@@ -269,4 +272,61 @@ function addServerToDisabled(server) {
 		Disabled[server.id] = {"disabledCmds":[]};
 		updatedD = true;
 	}
+}
+
+exports.rss_handleLeave = function(server)
+{
+	async.waterfall([
+		function doCheckId(done)
+		{
+			mysql_db.query("SELECT * FROM rss_feeds WHERE server_id = ?",server.id,function(err, results, fields){
+				console.log(server.id);
+				if(err)
+				{
+					console.error('DB Error!: ' + err.stack);
+					done(new Error(err.stack));
+					return;
+				}
+				else
+				{
+					if(results.length > 0)
+					{
+						done(null);
+						return;
+					}
+					else
+					{
+						done(new Error("no rss for this server: "+server.name + " | " + server.id));
+						return;
+					}
+				}
+			});
+		},
+		function doDeleteQuery(done)
+		{
+			mysql_db.query("DELETE FROM rss_feeds WHERE server_id = ?",server.id,function(err, results){
+				if(err)
+				{
+					console.error('DB Error!: ' + err.stack);
+					done(new Error(err.stack));
+					return;
+				}
+				else
+				{
+					done(null);
+					return;
+				}
+			});
+		}
+	], function(err, res)
+	{
+		if(!err)
+		{
+			console.log("[RSSFeed] Removed RSS feeds from DB for: " + server.name + " | " + server.id);
+        }
+		else
+		{
+			console.log("[RSSFeed] " + err.message);
+		}
+	});
 }
