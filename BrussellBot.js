@@ -151,6 +151,7 @@ bot.on("message", msg => {
 	//console.log(msg.content.startsWith(config.command_prefix) || msg.content.startsWith(config.mod_command_prefix));
 	
 	if (msg.content.startsWith(config.command_prefix)) {
+	if (!Disabled.hasOwnProperty(msg.channel.server.id)) db.addServerToDisabled(msg.channel.server);
 	if (Disabled[msg.channel.server.id].disabledCmds.indexOf(cmd) > -1) return;
 		if (commands.commands.hasOwnProperty(cmd)) execCommand(msg, cmd, suffix, "normal");
 		else if (commands.aliases.hasOwnProperty(cmd)) {

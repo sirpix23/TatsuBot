@@ -637,9 +637,10 @@ var commands = {
     },
 	"disable": {
 		desc: "Have the bot disable a command",
-		usage: "",
+		usage: "<command>",
 		cooldown: 3, deleteCommand: true,
 		process: function(bot, msg, suffix) {
+			if (!suffix) {bot.sendMessage(msg, "Please specify a command!"); return;};
 			if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do this in a PM!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
 			if (!msg.channel.permissionsOf(msg.author).hasPermission("manageServer") && msg.author.id != config.admin_id) { bot.sendMessage(msg, "You must have permission to manage the server!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
 			if (!Disabled.hasOwnProperty(msg.channel.server.id)) db.addServerToDisabled(msg.channel.server);
@@ -658,9 +659,10 @@ var commands = {
 	},
 	"enable": {
 		desc: "Have the bot enable a command",
-		usage: "",
+		usage: "<command>",
 		cooldown: 3, deleteCommand: true,
 		process: function(bot, msg, suffix) {
+			if (!suffix) {bot.sendMessage(msg, "Please specify a command!"); return;};
 			if (msg.channel.isPrivate) { bot.sendMessage(msg, "Can't do this in a PM!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
 			if (!msg.channel.permissionsOf(msg.author).hasPermission("manageServer") && msg.author.id != config.admin_id) { bot.sendMessage(msg, "You must have permission to manage the server!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); }); return; }
 			if (!Disabled.hasOwnProperty(msg.channel.server.id)) db.addServerToDisabled(msg.channel.server);
@@ -669,6 +671,20 @@ var commands = {
 				db.enableCmd(suffix, msg.channel.server.id);
 				bot.sendMessage(msg, "✅ I'll enable this command. ");
 			}
+		}
+	},
+	"disabled": {
+		desc: "List all disabled commands",
+		usage: "<command>",
+		cooldown: 3, deleteCommand: true,
+		process: function(bot, msg) {
+			var disabledList = "**Disabled Commands:**\n\n";
+			console.log(Disabled[msg.channel.server.id].disabledCmds);
+			(Disabled[msg.channel.server.id].disabledCmds).forEach(function(disabledCmds) {
+				disabledList += " `" + disabledCmds + "` ";
+			});
+			disabledList += "\n\n *List of commands disabled on this server. Enable them using* `" + config.mod_command_prefix + "enable`";
+			bot.sendMessage(msg, disabledList);
 		}
 	}
 }
