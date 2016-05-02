@@ -2,15 +2,19 @@ var fs = require('fs')
 	,config = require("../bot/config.json");
 ServerSettings = require('../db/servers.json');
 Times = require('../db/times.json');
-Disabled = require('../db/disabled.json');
+//Disabled = require('../db/disabled.json');
 var inactive = []
 	,whitelist = require('./config.json').whitelist;
-
+	
 var mysql_db = require('./mysql.js');
 var async = require('async');
+var Random = require("random-js");
+var randEngine = new Random(Random.engines.mt19937().autoSeed());
+var redis = require('redis');
+var client = redis.createClient(); //creates a new client
 
 //Timer for updating config files
-var updatedS = false, updatedT = false, updatedD = false;
+var updatedS = false, updatedT = false/*, updatedD = false*/;
 setInterval(() => {
 	if (updatedS) {
 		updatedS = false;
@@ -20,13 +24,14 @@ setInterval(() => {
 		updatedT = false;
 		updateTimes();
 	}
-	if (updatedD) {
+	/*if (updatedD) {
 		updatedD = false;
 		updateDisabled();
-	}
+	}*/
 }, 60000)
 
 //Function for saving to disabled.json
+/*
 function updateDisabled() {
 	fs.writeFile(__dirname + '/../db/disabled-temp.json', JSON.stringify(Disabled), error=>{
 		if (error) console.log(error)
@@ -41,7 +46,7 @@ function updateDisabled() {
 			});
 		}
 	})
-}
+}*/
 
 //Function for saving to servers.json
 function updateServers() {
@@ -131,9 +136,8 @@ exports.unignoreChannel = function(channelId, serverId) {
 };
 
 //Disable Command
-exports.disableCmd = function(suffix, serverId) {
+/*exports.disableCmd = function(suffix, serverId) {
 	if (!suffix || !serverId) return;
-	console.log(suffix, serverId);
 	if (Disabled[serverId].disabledCmds.indexOf(suffix) == -1) {
 		Disabled[serverId].disabledCmds.push(suffix);
 		updatedD = true;
@@ -147,7 +151,7 @@ exports.enableCmd = function(suffix, serverId) {
 		Disabled[serverId].disabledCmds.splice(Disabled[serverId].disabledCmds.indexOf(suffix), 1);
 		updatedD = true;
 	}
-};
+};*/
 
 exports.checkServers = function(bot) {
 	inactive = [];
@@ -258,6 +262,7 @@ exports.updateTimestamp = function(server) {
 };
 
 //Add server to disabled.json if not in the disabled commands config
+/*
 exports.addServerToDisabled = function(server) {
 	if (!server || !server.id) return;
 	if (!Disabled.hasOwnProperty(server.id)) {
@@ -272,6 +277,23 @@ function addServerToDisabled(server) {
 		Disabled[server.id] = {"disabledCmds":[]};
 		updatedD = true;
 	}
+}
+*/
+
+//Redis add server to disabled keys
+
+exports.disableCmd = function(suffix, serverId) {
+	if (!serverId || !suffix) return;
+	client.set("server:" + serverId + ":disabled:" + suffix, "disabled", function(err, reply) {
+		console.log(suffix + " disabled on " + serverId);
+	});
+}
+
+exports.enableCmd = function(suffix, serverId) {
+	if (!serverId || !suffix) return;
+	client.del("server:" + serverId + ":disabled:" + suffix, function(err, reply) {
+		console.log(suffix + " enabled on " + serverId);
+	});
 }
 
 exports.rss_handleLeave = function(server)
@@ -329,4 +351,112 @@ exports.rss_handleLeave = function(server)
 			console.log("[RSSFeed] " + err.message);
 		}
 	});
+}
+
+
+//Leveling & credits stuff
+var expValue = randEngine.integer(10, 20), credValue = randEngine.integer(5, 10), oldExp = 0, oldLvl = 0;
+
+exports.addLvlCreds = function(serverId, userId, callback) {
+	var profile = "profile:" + userId;
+	var userLeveled = {};
+	var newExpValue = 0;
+	if (!userId) return;
+	//If there is an cooldown for the user, skip adding exp
+	client.get("cooldown:" + userId, function(err, reply) {
+
+		//If reply is null, then set expire key and set exp, update global rankings
+		if(!reply){
+			//console.log("Giving EXP and credits");
+			async.series([
+				function(done){
+					client.hget(profile, "exp", function(err, reply)
+						{
+							if(reply)
+							{
+								oldExp = reply;
+								oldLvl = Math.floor(0.12 * Math.sqrt(oldExp));
+							}
+							else console.log("No exp");
+							done(null);
+						})
+					},
+				function(done){
+					//console.log("incr exp");
+					client.hincrby(profile, "exp", expValue, function(err,reply){ done(null); return; });
+					
+					var oldExpConv = parseInt(oldExp);
+					var expValueConv = parseInt(expValue);
+					newExpValue = oldExpConv + expValueConv;
+					
+					currentLvl = Math.floor(0.12 * Math.sqrt(newExpValue));
+					
+						if(currentLvl > oldLvl){
+							//bot.sendMessage(msg, "You have obtained level 6!");
+							console.log(userId + " has reached level " + currentLvl);
+							userLeveled = {
+								"id":userId,
+								"level":currentLvl
+							};
+							
+						}
+					},
+				function(done){
+					//console.log("incr credits");
+					client.hincrby(profile, "credits", credValue, function(err,reply){ done(null); return; }); 
+					},
+				function(done){
+					//console.log("add ranking");
+					client.sadd("userList", "ranking:" + userId, function(err,reply){ done(null); return; });
+					},
+				function(done){
+					//console.log("set cd");
+					client.set("cooldown:" + userId, "true", function(err,reply){ done(null); return; });
+					},
+				function(done){
+					//console.log("expire cd");
+					client.expire("cooldown:" + userId, 60, function(err,reply){ done(null); return; });
+					}
+			], function(err, res)
+			{
+				if(!err)
+				{
+					client.zadd("server:" + serverId + ":ranking", newExpValue, userId);
+					client.zadd("global:ranking", newExpValue, userId);
+					//done
+					callback(userLeveled);
+				}
+			});
+			
+		}
+	});
+}	
+exports.addExclude = function(userId){
+	if (!userId) return;
+	client.set("global:exclude:" + userId, "excluded", function(err, reply) {
+		// reply if errors
+		console.log(reply);
+		console.log("Bot " + userId + " added to global exclusion list.");
+	});
+}
+
+exports.getKeyExists = function(keyToCheck, callback){
+	client.get(keyToCheck, function(err, reply) {
+		var keyExists = false;
+		if(reply) {
+			//console.log("Key exists in database - " + keyToCheck);
+			keyExists = true;
+		}
+		//console.log("The state of keyExists " + keyExists);
+		callback(keyExists);
+	});
+}
+	
+exports.getTop = function(suffix, callback){
+		if(suffix == "global"){
+			return;
+		} else {
+			return;
+		}
+		callback();
 }

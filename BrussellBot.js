@@ -5,7 +5,7 @@ var commands = require("./bot/commands.js")
 	,config = require("./bot/config.json")
 	,games = require("./bot/games.json")
 	,versioncheck = require("./bot/versioncheck.js")
-	,Disabled = require("./db/disabled.json")
+	/*,Disabled = require("./db/disabled.json")*/
 	,discord = require("discord.js")
 	,cleverbot = require("./bot/cleverbot.js").cleverbot
 	,db = require("./bot/db.js")
@@ -81,6 +81,7 @@ bot.on("disconnected", () => {
 });
 
 bot.on("message", msg => {
+
 	if (msg.author.id == bot.user.id) return;
 	if (msg.channel.isPrivate) {
 		if (/(^https?:\/\/discord\.gg\/[A-Za-z0-9]+$|^https?:\/\/discordapp\.com\/invite\/[A-Za-z0-9]+$)/.test(msg.content))
@@ -109,6 +110,47 @@ bot.on("message", msg => {
 			}
 		}
 	} else {
+		var excludedId = false;	
+			async.series([
+				function(done){
+					//console.log(msg.author.id + " - (author)" + msg.author.name + " isBot: " + msg.author.bot);
+					//If if user is in the exclude list, set noExp true
+						db.getKeyExists("global:exclude:" + msg.author.id, function(excluded){
+							if(excluded) {
+								//console.log("State of excluded: " + excluded);
+								//console.log("Bot is in exclusion list.");
+								excludedId = true;
+							}
+							else {
+									//If its bot add it to the exclude list.
+								if(msg.author.bot) {
+									db.addExclude(msg.author.id);
+									excludedId = true;
+								}
+							}
+							done(null);
+							return;
+						});
+				},
+				function(done){
+						//console.log("Excluded ID false or true = " + excludedId);
+						if(!excludedId)
+						{
+							db.addLvlCreds(msg.channel.server.id, msg.author.id, function(lvlupuser){
+								if(lvlupuser) {/*bot.sendMessage(msg, "<@" + msg.author.id + "> has reached level " + lvlupuser.level + "!");*/
+									if(lvlupuser.level) console.log(msg.author.id + " leveled to " + lvlupuser.level);
+										bot.sendMessage(msg, "<@" + msg.author.id + "> **has reached level " + lvlupuser.level + "!**");
+								}
+							});
+						}
+						else
+						{
+							console.log("Ignored -> "+msg.author.id + " - " + msg.author.name + " because ID is in the exclude list. isBot:" + msg.author.bot);
+						}
+						done(null);
+						return;
+				}
+			]);
 		if (msg.mentions.length !== 0) {
 			if (msg.isMentioned(bot.user) && msg.content.startsWith("<@" + bot.user.id + ">")) {
 				if (ServerSettings.hasOwnProperty(msg.channel.server.id)) { if (ServerSettings[msg.channel.server.id].ignore.indexOf(msg.channel.id) === -1) {
@@ -151,14 +193,33 @@ bot.on("message", msg => {
 	//console.log(msg.content.startsWith(config.command_prefix) || msg.content.startsWith(config.mod_command_prefix));
 	
 	if (msg.content.startsWith(config.command_prefix)) {
-	if (!Disabled.hasOwnProperty(msg.channel.server.id)) db.addServerToDisabled(msg.channel.server);
-	if (Disabled[msg.channel.server.id].disabledCmds.indexOf(cmd) > -1) return;
-		if (commands.commands.hasOwnProperty(cmd)) execCommand(msg, cmd, suffix, "normal");
-		else if (commands.aliases.hasOwnProperty(cmd)) {
-			if (!msg.channel.isPrivate) db.updateTimestamp(msg.channel.server);
-			msg.content = msg.content.replace(/[^ ]+ /, config.command_prefix + commands.aliases[cmd] + " ");
-			execCommand(msg, commands.aliases[cmd], suffix, "normal");
-		}
+		var disabledState = false;
+	/*if (!Disabled.hasOwnProperty(msg.channel.server.id)) db.addServerToDisabled(msg.channel.server);
+	if (Disabled[msg.channel.server.id].disabledCmds.indexOf(cmd) > -1) return;*/
+			async.series([
+				function(done){
+					db.getKeyExists("server:" + msg.channel.server.id +  ":disabled:" + cmd, function(disabled){
+						if(disabled) {
+							//console.log("State of disabled: " + disabled);
+							//console.log("Command is disabled.");
+							disabledState = true;
+						}
+						done(null); 
+						return;
+					});
+				},
+				function(done){
+					//console.log("Disabled State: " + disabledState);
+					if (commands.commands.hasOwnProperty(cmd) && !disabledState) execCommand(msg, cmd, suffix, "normal");
+					else if (commands.aliases.hasOwnProperty(cmd) && !disabledState) {
+						if (!msg.channel.isPrivate) db.updateTimestamp(msg.channel.server);
+						msg.content = msg.content.replace(/[^ ]+ /, config.command_prefix + commands.aliases[cmd] + " ");
+						execCommand(msg, commands.aliases[cmd], suffix, "normal");
+					}
+					done(null); 
+					return;
+				}
+			]);
 	} else if (msg.content.startsWith(config.mod_command_prefix)) {
 		if (cmd == "reload" && msg.author.id == config.admin_id) { reload(); bot.deleteMessage(msg); return; }
 		if (mod.commands.hasOwnProperty(cmd)) execCommand(msg, cmd, suffix, "mod");

@@ -1460,7 +1460,7 @@ var commands = {
 								if (!sendNSFW && toSend.nsfw != true) { if (toSend.title) bot.sendMessage(msg, "📷 " + toSend.link + " " + toSend.title); else  + " " + bot.sendMessage(msg, toSend.link); break; }
 								else if (sendNSFW && toSend.nsfw == true) { if (toSend.title) bot.sendMessage(msg, "📷 " + toSend.link + " **(NSFW)** " + toSend.title); else  + " " + bot.sendMessage(msg, toSend.link + " **(NSFW)**"); break; }
 							}
-						} else bot.sendMessage(msg, "Nothing found!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); });
+						} else bot.sendMessage(msg, "Nothing found! Try another subreddit!", (erro, wMessage) => { bot.deleteMessage(wMessage, {"wait": 10000}); });
 					}
 				});
 			} else correctUsage("image", this.usage, msg, bot);
@@ -2141,7 +2141,49 @@ var commands = {
                 }
             });
         }
+    },
+	"fishy": {
+		desc: "Here fishy fishy...",
+		usage: "?",
+		deleteCommand: false,
+		cooldown: 10,
+		commandType: "interactions",
+		process: function(bot,msg,suffix)
+		{
+			var dice1 = Math.floor((Math.random() * 3));
+			var dice2 = Math.floor((Math.random() * 3));
+			var rand = Math.floor((Math.random() * (128044 - 128000)));
+			var str = String.fromCodePoint(128000+rand);
+			var toSend = [];
+			if(dice1 == dice2)
+			{
+				toSend.push("You caught a " + str + "!!");
+			}
+			else{
+				toSend.push("All is silent...");
+			}
+			bot.sendMessage(msg.channel, toSend);
+		}
+	}
+	/*
+	"top": {
+		desc: "Shows who has the highest exp on the server or globally.",
+        usage: "[global]",
+        deleteCommand: true,
+        cooldown: 5,
+        commandType: "search",
+		category: "social",
+		//helpGif: "youtube.gif",
+        process: function(bot, msg, suffix) {
+			if (suffix == global){
+				
+				
+			} else {
+										
+			}
+        }
     }
+	*/
 	
 };
 
