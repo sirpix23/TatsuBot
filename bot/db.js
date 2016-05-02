@@ -355,7 +355,7 @@ exports.rss_handleLeave = function(server)
 
 
 //Leveling & credits stuff
-var expValue = randEngine.integer(10, 20), credValue = randEngine.integer(5, 10), oldExp = 0, oldLvl = 0;
+var expValue = randEngine.integer(10, 20), credValue = randEngine.integer(5, 10), currentLvl = 0, oldExp = 0, oldLvl = 0;
 
 exports.addLvlCreds = function(serverId, userId, callback) {
 	var profile = "profile:" + userId;

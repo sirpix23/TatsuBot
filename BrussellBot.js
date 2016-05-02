@@ -138,8 +138,8 @@ bot.on("message", msg => {
 						{
 							db.addLvlCreds(msg.channel.server.id, msg.author.id, function(lvlupuser){
 								if(lvlupuser) {/*bot.sendMessage(msg, "<@" + msg.author.id + "> has reached level " + lvlupuser.level + "!");*/
-									if(lvlupuser.level) console.log(msg.author.id + " leveled to " + lvlupuser.level);
-										bot.sendMessage(msg, "<@" + msg.author.id + "> **has reached level " + lvlupuser.level + "!**");
+									if(lvlupuser.level) /*console.log(msg.author.id + " leveled to " + lvlupuser.level);*/
+									bot.sendMessage(msg, "<@" + msg.author.id + "> **has reached level " + lvlupuser.level + "!**");
 								}
 							});
 						}
