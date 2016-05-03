@@ -17,7 +17,8 @@ var config = require("./config.json")
 	,jp_conv = require('jp-conversion')
 	,google = require('google')
 	,Wiki = require('wikijs')
-	,YouTube = require('youtube-node');
+	,YouTube = require('youtube-node'),
+	lodash = require('lodash');
 
 var VoteDB = {}
 	,LottoDB = {}
@@ -189,7 +190,16 @@ var commands = {
 			//gotta really optimize this frankenstein help ;_;
 			if (!suffix) {
 				
-				var helpMsg = "__**Tatsu-chan Commands List**__\n\n*Don't include the example brackets when using commands!*\n\n**Standard -** ";
+				var helpMsg = "__**Tatsu-chan Commands List**__\n\n*Don't include the example brackets when using commands!*\n\n**Social -** ";
+				
+					Object.keys(commands).forEach(cmd=>{
+						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "social") {
+							if (commands[cmd].shouldDisplay) helpMsg += "`" + cmd + "`  ";
+						} else if (commands[cmd].commandType == "social") helpMsg += "`" + cmd + "`  ";
+						
+					});
+					
+					helpMsg += "\n**Standard -** ";
 				
 					Object.keys(commands).forEach(cmd=>{
 						if (commands[cmd].hasOwnProperty("shouldDisplay") && commands[cmd].commandType == "standard") {
@@ -2166,30 +2176,170 @@ var commands = {
 		}
 	},
 	"rank": {
-		desc: "Check your global rank, local rank, exp and levels",
+		desc: "Check yours or someone else's global leaderboard rank, server leaderboard rank, total exp and levels",
 		usage: "[someone]",
 		deleteCommand: false,
 		cooldown: 10,
-		commandType: "interactions",
+		commandType: "social",
 		process: function(bot,msg,suffix)
 		{
-			var findId = findUser(msg.channel.server.members, suffix);
-			console.log(findId.id);
-			var userId;
+			var userId = "";
+			var isIdString = false;
+			var idString = "";
+			async.series([
+				function(done){
+					if(suffix.startsWith("<@") && suffix.endsWith(">")){
+						suffix = (suffix.substring(2, suffix.length-1));
+						idString = suffix;
+						isIdString = true;
+						console.log("isIdString true: " + suffix);
+					}
+					done(null);
+					return;
+				},
+				function(done){
+					if(isIdString == true){
+						userId = idString;
+					}
+					else if(suffix) {
+						var findId = findUser(msg.channel.server.members, suffix);
+						console.log("findId.id" + findId.id);
+						if(!findId.id){
+							userId = msg.author.id;
+						}
+						else{
+							userId = findId.id;
+						}
+
+					} 
+					else {
+						userId = msg.author.id;
+					}
+					bot.sendMessage(msg, "**Ranking & Statistics for <@" + userId + ">**").then(msg => done(null));
+					return;
+				},
+				function(done){
+					db.getRankings("server:" + msg.channel.server.id + ":ranking", userId, function(ranking){
+						bot.sendMessage(msg,"**Global Ranking: [ " + ranking.globalRanking + " ] | Local Ranking: [ " + ranking.serverRanking + " ]**").then(msg => done(null));
+					});
+					db.getLvl(userId, function(userStats){
+						bot.sendMessage(msg, "**LEVEL: [ " + userStats.level + " ] | EXP: [ " + userStats.exp + " / " + userStats.nextlvlexp + " ]**").then(msg => done(null));
+					});
+					done(null);
+					return;
+				}
+			]);
+		}
+	},
+	"top10": {
+		desc: "Gets the leaderboard ranks of the top 10 users within your server (Users who have the most levels / exp)",
+		usage: "",
+		deleteCommand: false,
+		cooldown: 20,
+		commandType: "social",
+		process: function(bot, msg, suffix)
+		{
+			var bServer = true;
 			
-			if(suffix) {
-				userId = findId.id
+			if(suffix)
+			{
+				var argv = yargs.parse(suffix);
+				console.log("top10 argv: "+argv._);
+				if(argv._ == "server")
+				{
+					bServer = true;
+				}
+				else if(argv._ == "global")
+				{
+					bServer = false;
+				}
+				else bServer = true;
 			}
-			else {
-				userId = msg.author.id;
+			
+			if(bServer)
+			{
+				db.getTop10(msg.channel.server.id, function(listTop10)
+				{
+					var list10 = listTop10;
+					async.series([
+						function sendHeader(done)
+						{
+							bot.sendMessage(msg, "**Local Leaderboards for "+msg.channel.server.name+" Server**").then(msg=>done(null));
+						},
+						function getNamesForUsers(done)
+						{
+							for(var i = 0; i < listTop10.length; i++)
+							{
+								list10[i]["name"] = bot.users.get("id", listTop10[i].id).name;
+							}
+							done(null);
+						},
+						function sendTop10(done)
+						{
+							var toSend = [];
+							//using ruby formatting
+							toSend.push("```ruby");
+							toSend.push(
+								lodash.padEnd("Rank",4,' ')
+								+"| "
+								+lodash.padEnd("Name",24,' ')
+								);
+							for(var i = 0; i < list10.length; i++)
+							{
+								//list10[i]["name"] = bot.users.get("id", listTop10[i].id).name;
+								toSend.push(lodash.padEnd(
+								(i+1),4,' ')
+								+"| "
+								+lodash.padEnd(list10[i].name, 30, ' ')
+								+"| Lv: "
+								+lodash.padEnd(list10[i].level, 4, ' ')
+								+"| EXP: "
+								+lodash.padEnd(list10[i].exp, 10, ' ')
+								);
+							}
+							toSend.push("```");
+							bot.sendMessage(msg, toSend);
+							done(null);
+						}
+					],function(err,res){
+						if(!err) console.log("sent top10 for server");
+					});
+				});
 			}
-			bot.sendMessage(msg, "**Ranking & Statistics for <@" + userId + ">**");
-			db.getLvl(userId, function(userStats){
-				bot.sendMessage(msg, "**LEVEL: " + userStats.level + " | EXP: " + userStats.exp + "/" + userStats.nextlvlexp + "**");
-			});
-			db.getRankings("server:" + msg.channel.server.id + ":ranking", userId, function(ranking){
-				bot.sendMessage(msg,"**Global Ranking: [ " + ranking.globalRanking + " ] | Local Ranking: [ " + ranking.serverRanking + " ]**");
-			});
+			else
+			{
+				db.getTop10(null, function(listTop10)
+				{
+					var list10 = listTop10;
+					async.series([
+						function sendHeader(done)
+						{
+							bot.sendMessage(msg, "**Global Leaderboards**").then(msg=>done(null));
+						},
+						function getNamesForUsers(done)
+						{
+							for(var i = 0; i < listTop10.length; i++)
+							{
+								list10[i]["name"] = bot.users.get("id", listTop10[i].id).name;
+							}
+							done(null);
+						},
+						function sendTop10(done)
+						{
+							var toSend = [];
+							for(var i = 0; i < list10.length; i++)
+							{
+								//list10[i]["name"] = bot.users.get("id", listTop10[i].id).name;
+								toSend.push("#"+i+"\t| **"+list10[i].name+"**\t| Lv: **"+list10[i].level+"** | EXP: **"+list10[i].exp+"**");
+							}
+							bot.sendMessage(msg, toSend);
+							done(null);
+						}
+					],function(err,res){
+						if(!err) console.log("sent top10 for server");
+					});
+				});
+			}
 			
 		}
 	}

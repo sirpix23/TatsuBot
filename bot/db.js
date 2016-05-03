@@ -357,6 +357,11 @@ exports.rss_handleLeave = function(server)
 //Leveling & credits stuff
 var expValue = randEngine.integer(10, 20), credValue = randEngine.integer(5, 10), currentLvl = 0, oldExp = 0, oldLvl = 0;
 
+function getLevelByExp(exp)
+{
+	return Math.floor(0.12 * Math.sqrt(exp));
+}
+
 exports.addLvlCreds = function(serverId, userId, callback) {
 	var profile = "profile:" + userId;
 	var userLeveled = {};
@@ -375,7 +380,7 @@ exports.addLvlCreds = function(serverId, userId, callback) {
 							if(reply)
 							{
 								oldExp = reply;
-								oldLvl = Math.floor(0.12 * Math.sqrt(oldExp));
+								oldLvl = getLevelByExp(oldExp);
 							}
 							else console.log("No exp");
 							done(null);
@@ -390,7 +395,7 @@ exports.addLvlCreds = function(serverId, userId, callback) {
 					var expValueConv = parseInt(expValue);
 					newExpValue = oldExpConv + expValueConv;
 					
-					currentLvl = Math.floor(0.12 * Math.sqrt(newExpValue));
+					currentLvl = getLevelByExp(newExpValue);
 					
 						if(currentLvl > oldLvl){
 							//bot.sendMessage(msg, "You have obtained level 6!");
@@ -453,7 +458,102 @@ exports.getKeyExists = function(keyToCheck, callback){
 	});
 }
 
-
+exports.getTop10 = function(serverId, callback)
+{
+	if(serverId)
+	{
+		//server
+		console.log("server top 10 --->");
+		async.waterfall([
+			function getRevRngForServer(done)
+			{
+				var args = ["server:"+serverId+":ranking", "0", "9", "WITHSCORES"];
+				client.zrevrange(args, function(err, reply)
+				{
+					//console.log(reply);
+					console.log("ok!");
+					done(null, reply);
+				});
+			},
+			function createListFromReply(reply, done)
+			{
+				if(reply)
+				{
+					console.log("reply!");
+					var list = [];
+					for(var i = 0; i < reply.length; i++)
+					{
+						if(i % 2 == 0)
+						{
+							var keyval = {};
+							keyval["id"] = reply[i];
+							keyval["exp"] = reply[i+1];
+							keyval["level"] = getLevelByExp(reply[i+1]);
+							list.push(keyval);
+							i++;
+						}
+					}
+					done(null, list);
+				}
+				
+				return;
+			}
+		],function(err,res)
+		{
+			if(!err)
+			{
+				console.log("done server top10");
+				callback(res);
+			}
+		});
+	}
+	else
+	{
+		//global
+		console.log("global top 10 --->");
+		async.waterfall([
+			function getRevRngForGlobal(done)
+			{
+				var args = ["global:ranking", "0", "9", "WITHSCORES"];
+				client.zrevrange(args, function(err, reply)
+				{
+					//console.log(reply);
+					console.log("get!");
+					done(null, reply);
+				});
+			},
+			function createListFromReply(reply, done)
+			{
+				if(reply)
+				{
+					console.log("reply!");
+					var list = [];
+					for(var i = 0; i < reply.length; i++)
+					{
+						if(i % 2 == 0)
+						{
+							var keyval = {};
+							keyval["id"] = reply[i];
+							keyval["exp"] = reply[i+1];
+							keyval["level"] = getLevelByExp(reply[i+1]);
+							list.push(keyval);
+							i++;
+						}
+					}
+					done(null, list);
+				}
+				return;
+			}
+		],function(err,res)
+		{
+			if(!err)
+			{
+				console.log("done global top10");
+				callback(res);
+			}
+		});
+	}
+}
 	
 exports.getLvl = function(userId, callback) {
 	var profile = "profile:" + userId;
@@ -473,7 +573,7 @@ exports.getLvl = function(userId, callback) {
 			});
 		},
 		function(done){
-			userLevel = Math.floor(0.12 * Math.sqrt(userExp));
+			userLevel = getLevelByExp(userExp);
 			nextLevel = userLevel + 1;
 			previousExp = Math.floor(Math.pow((userLevel/0.12), 2));
 			//console.log("previousExp is: " + previousExp);
@@ -513,16 +613,14 @@ exports.getRankings = function (serverId, userId, callback){
 	async.series([
 		function(done){
 			client.zrevrank("global:ranking", userId , function(err, reply) {
-				if(reply) {
-					if(reply == null){
-					globalRankInt = 0;
-					} else if(reply) {
-						globalRank = reply;
-						console.log("globalRank is: " + reply);
-							globalRankInt = parseInt(globalRank) + 1;
-					} else {
-						globalRankInt = 1;
-					}
+				if(reply == null){
+				globalRankInt = 0;
+				} else if(reply) {
+					globalRank = reply;
+					console.log("globalRank is: " + reply);
+						globalRankInt = parseInt(globalRank) + 1;
+				} else {
+					globalRankInt = 1;
 				}
 				done(null);
 				return;
