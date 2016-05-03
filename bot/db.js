@@ -379,6 +379,7 @@ exports.addLvlCreds = function(serverId, userId, callback) {
 							}
 							else console.log("No exp");
 							done(null);
+							return;
 						})
 					},
 				function(done){
@@ -451,12 +452,114 @@ exports.getKeyExists = function(keyToCheck, callback){
 		callback(keyExists);
 	});
 }
+
+
 	
-exports.getTop = function(suffix, callback){
-		if(suffix == "global"){
+exports.getLvl = function(userId, callback) {
+	var profile = "profile:" + userId;
+	var userStats = {};
+	var userExp = 0, userLevel = 0, nextLevel = 0, nextExp = 0, previousExp = 0, neededExp = 0, currentExp = 0;
+	if (!userId) return;
+	async.series([
+		function(done){
+			//get all the exps needed and do calculation Remember add check for users with no exp
+			client.hget(profile, "exp", function(err, reply){
+				if(reply){
+					userExp = reply;
+					//console.log("userExp is: " + userExp);
+				}
+				done(null);
+				return;
+			});
+		},
+		function(done){
+			userLevel = Math.floor(0.12 * Math.sqrt(userExp));
+			nextLevel = userLevel + 1;
+			previousExp = Math.floor(Math.pow((userLevel/0.12), 2));
+			//console.log("previousExp is: " + previousExp);
+			nextExp = Math.floor(Math.pow((nextLevel/0.12), 2)) - previousExp;
+			currentExp = userExp - previousExp;
+			//console.log("nextExp is: " + nextExp);
+			//console.log("neededExp is: " + neededExp);
+			done(null);
 			return;
-		} else {
+		},
+		function(done){
+			userStats = {
+				"id":userId,
+				"level":userLevel,
+				"exp":currentExp,
+				"nextlvlexp":nextExp,
+				//"nextlevel":nextLevel
+			};
+			done(null);
 			return;
 		}
-		callback();
+	], function(err, res)
+	{
+		if(!err)
+		{
+			callback(userStats);
+		}
+	});
+}
+//
+exports.getRankings = function (serverId, userId, callback){
+	if (!userId) return;
+	var userRanks = {};
+	var globalRankInt = 0, serverRankInt = 0;
+	var globalRank = 0;
+	var serverRank = 0;
+	async.series([
+		function(done){
+			client.zrevrank("global:ranking", userId , function(err, reply) {
+				if(reply) {
+					if(reply == null){
+					globalRankInt = 0;
+					} else if(reply) {
+						globalRank = reply;
+						console.log("globalRank is: " + reply);
+							globalRankInt = parseInt(globalRank) + 1;
+					} else {
+						globalRankInt = 1;
+					}
+				}
+				done(null);
+				return;
+			});
+		},
+		function(done){
+			client.zrevrank(serverId, userId , function(err, reply) {
+				if(reply == null){
+					serverRankInt = 0;
+				} else if(reply) {
+					serverRank = reply;
+					console.log("serverRank is: " + reply);
+						serverRankInt = parseInt(serverRank) + 1;
+				} else {
+					serverRankInt = 1;
+				}
+			done(null);
+			return;
+			});	
+		},
+		function(done){
+			console.log("global ranking: " + globalRankInt);
+			console.log("server ranking: " + serverRankInt);
+			userRanks = {
+				"id":userId,
+				"globalRanking":globalRankInt,
+				"serverRanking":serverRankInt
+				//"nextlevel":nextLevel
+			};
+			done(null);
+			return;
+		}
+	], function(err, res)
+	{
+		if(!err)
+		{
+			callback(userRanks);
+		}
+	});
 }

@@ -2144,7 +2144,7 @@ var commands = {
     },
 	"fishy": {
 		desc: "Here fishy fishy...",
-		usage: "?",
+		usage: "Catch a random 'fish'",
 		deleteCommand: false,
 		cooldown: 10,
 		commandType: "interactions",
@@ -2164,7 +2164,36 @@ var commands = {
 			}
 			bot.sendMessage(msg.channel, toSend);
 		}
+	},
+	"rank": {
+		desc: "Check your global rank, local rank, exp and levels",
+		usage: "[someone]",
+		deleteCommand: false,
+		cooldown: 10,
+		commandType: "interactions",
+		process: function(bot,msg,suffix)
+		{
+			var findId = findUser(msg.channel.server.members, suffix);
+			console.log(findId.id);
+			var userId;
+			
+			if(suffix) {
+				userId = findId.id
+			}
+			else {
+				userId = msg.author.id;
+			}
+			bot.sendMessage(msg, "**Ranking & Statistics for <@" + userId + ">**");
+			db.getLvl(userId, function(userStats){
+				bot.sendMessage(msg, "**LEVEL: " + userStats.level + " | EXP: " + userStats.exp + "/" + userStats.nextlvlexp + "**");
+			});
+			db.getRankings("server:" + msg.channel.server.id + ":ranking", userId, function(ranking){
+				bot.sendMessage(msg,"**Global Ranking: [ " + ranking.globalRanking + " ] | Local Ranking: [ " + ranking.serverRanking + " ]**");
+			});
+			
+		}
 	}
+	
 	/*
 	"top": {
 		desc: "Shows who has the highest exp on the server or globally.",

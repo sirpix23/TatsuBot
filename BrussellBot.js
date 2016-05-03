@@ -353,7 +353,7 @@ bot.on("serverCreated", server => {
 			bot.sendMessage(server.defaultChannel, toSend);
 			db.addServer(server);
 			db.addServerToTimes(server);
-			db.addServerToDisabled(server);
+			/*db.addServerToDisabled(server);*/
 		}
 	}
 });
