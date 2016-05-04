@@ -2240,6 +2240,12 @@ var commands = {
 		process: function(bot, msg, suffix)
 		{
 			var bServer = true;
+			var arrow = String.fromCodePoint(10148);
+			var symbols = [
+				String.fromCodePoint(9819),
+				String.fromCodePoint(8795),
+				String.fromCodePoint(10026)
+			];
 			
 			if(suffix)
 			{
@@ -2266,6 +2272,7 @@ var commands = {
 						{
 							bot.sendMessage(msg, "**Local Leaderboards for "+msg.channel.server.name+" Server**").then(msg=>done(null));
 						},
+						//only for local server tatsu resides in, since local users are cached. global requires a db read
 						function getNamesForUsers(done)
 						{
 							for(var i = 0; i < listTop10.length; i++)
@@ -2287,6 +2294,8 @@ var commands = {
 							for(var i = 0; i < list10.length; i++)
 							{
 								//list10[i]["name"] = bot.users.get("id", listTop10[i].id).name;
+								//FUGLY OCD INDUCING CRAP
+								/*
 								toSend.push(lodash.padEnd(
 								(i+1),4,' ')
 								+"| "
@@ -2295,6 +2304,18 @@ var commands = {
 								+lodash.padEnd(list10[i].level, 4, ' ')
 								+"| EXP: "
 								+lodash.padEnd(list10[i].exp, 10, ' ')
+								);*/
+								if(i<symbols.length)
+								{
+									toSend.push(lodash.padEnd((i+1),2,' ')+symbols[i]+" "+arrow+"  # "+list10[i].name);
+								}
+								else toSend.push(lodash.padEnd((i+1),4,' ')+arrow+"  # "+list10[i].name);
+								toSend.push("\t"
+								+"  Lv: "
+								+lodash.padEnd(list10[i].level, 4, ' ')
+								+"- Total Exp: "
+								+lodash.padEnd(list10[i].exp, 10, ' ')
+								+"\n"
 								);
 							}
 							toSend.push("```");
@@ -2316,22 +2337,32 @@ var commands = {
 						{
 							bot.sendMessage(msg, "**Global Leaderboards**").then(msg=>done(null));
 						},
-						function getNamesForUsers(done)
-						{
-							for(var i = 0; i < listTop10.length; i++)
-							{
-								list10[i]["name"] = bot.users.get("id", listTop10[i].id).name;
-							}
-							done(null);
-						},
 						function sendTop10(done)
 						{
 							var toSend = [];
+							//using ruby formatting
+							toSend.push("```ruby");
+							toSend.push(
+								lodash.padEnd("Rank",4,' ')
+								+"| "
+								+lodash.padEnd("Name",24,' ')
+								);
 							for(var i = 0; i < list10.length; i++)
 							{
-								//list10[i]["name"] = bot.users.get("id", listTop10[i].id).name;
-								toSend.push("#"+i+"\t| **"+list10[i].name+"**\t| Lv: **"+list10[i].level+"** | EXP: **"+list10[i].exp+"**");
+								if(i<symbols.length)
+								{
+									toSend.push(lodash.padEnd((i+1),2,' ')+symbols[i]+" "+arrow+"  # "+list10[i].name);
+								}
+								else toSend.push(lodash.padEnd((i+1),4,' ')+arrow+"  # "+list10[i].name);
+								toSend.push("\t"
+								+"  Lv: "
+								+lodash.padEnd(list10[i].level, 4, ' ')
+								+"- Total Exp: "
+								+lodash.padEnd(list10[i].exp, 10, ' ')
+								+"\n"
+								);
 							}
+							toSend.push("```");
 							bot.sendMessage(msg, toSend);
 							done(null);
 						}

@@ -546,6 +546,7 @@ exports.getTop10 = function(serverId, callback)
 						if(i % 2 == 0)
 						{
 							var keyval = {};
+							//console.log("profile:"+reply[i]+" name");
 							keyval["id"] = reply[i];
 							keyval["exp"] = reply[i+1];
 							keyval["level"] = getLevelByExp(reply[i+1]);
@@ -556,6 +557,29 @@ exports.getTop10 = function(serverId, callback)
 					done(null, list);
 				}
 				return;
+			},
+			function getNamesForList(list, done)
+			{
+				if(list)
+				{
+					async.each(list, function(profile_data, done)
+					{
+						var args = ["profile:"+profile_data["id"], "name"];
+						client.hget(args, function(err, reply){
+							console.log(reply + " - " + profile_data["id"]);
+							//doing this will change the underlying value, but the reference to the main list still stays the same.
+							profile_data["name"] = reply;
+							done(null);
+						});
+					},function(err)
+					{
+						//yolo
+						if(!err)
+						{
+							done(null, list);
+						}
+					});
+				}
 			}
 		],function(err,res)
 		{

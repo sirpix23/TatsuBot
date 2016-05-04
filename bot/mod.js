@@ -697,7 +697,17 @@ var commands = {
 		usage: "",
 		cooldown: 3, deleteCommand: true,
 		process: function(bot, msg) {
-			Canvas.canvasTest();
+			Canvas.canvasTest(function(imgAsBuffer)
+			{
+				bot.sendFile(msg, imgAsBuffer, function(err, message)
+				{
+					if(!err)
+					{
+						console.log("image sent!");
+					}
+				});
+			}
+			);
 			console.log("Canvastest executed");
 		}
 	}
