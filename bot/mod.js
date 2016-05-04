@@ -2,7 +2,8 @@ var config = require("./config.json")
 	,games = require("./games.json")
 	,version = require("../package.json").version
 	,db = require("./db.js")
-	,normalCmd = require("./commands.js");
+	,normalCmd = require("./commands.js")
+	,Canvas = require('./canvas.js');
 
 //stuff for announce
 var confirmCodes = []
@@ -677,7 +678,7 @@ var commands = {
 				}
 			}
 		}
-	}/*,
+	},/*,
 	"disabled": {
 		desc: "List all disabled commands",
 		usage: "<command>",
@@ -691,6 +692,15 @@ var commands = {
 			bot.sendMessage(msg, disabledList);
 		}
 	}*/
+	"canvastest": {
+		desc: "Testing the canvas functions",
+		usage: "",
+		cooldown: 3, deleteCommand: true,
+		process: function(bot, msg) {
+			Canvas.canvasTest();
+			console.log("Canvastest executed");
+		}
+	}
 }
 
 exports.commands = commands;

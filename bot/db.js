@@ -179,7 +179,7 @@ exports.checkServers = function(bot) {
 				Times[server.id] = now;
 				addServer(server);
 			}
-		} else if (config.whitelist.indexOf(server.id) == -1 && now - Times[server.id] >= 604800000) {
+		} else if (config.whitelist.indexOf(server.id) == -1 && now - Times[server.id] >= 2419200000) {
 			inactive.push(server.id);
 			if (debug) console.log(cDebug(" DEBUG ") + " " + server.name + '(' + server.id + ')' + ' hasn\'t used the bot for ' + ((now - Times[server.id]) / 1000 / 60 / 60 / 24).toFixed(1) + ' days.');
 		}
@@ -362,11 +362,12 @@ function getLevelByExp(exp)
 	return Math.floor(0.12 * Math.sqrt(exp));
 }
 
-exports.addLvlCreds = function(serverId, userId, callback) {
+exports.addLvlCreds = function(serverId, userId, userName, userDiscrim, userAvatar, callback) {
 	var profile = "profile:" + userId;
 	var userLeveled = {};
 	var newExpValue = 0;
 	if (!userId) return;
+	if (!userName) return;
 	//If there is an cooldown for the user, skip adding exp
 	client.get("cooldown:" + userId, function(err, reply) {
 
@@ -408,8 +409,20 @@ exports.addLvlCreds = function(serverId, userId, callback) {
 						}
 					},
 				function(done){
-					//console.log("incr credits");
 					client.hincrby(profile, "credits", credValue, function(err,reply){ done(null); return; }); 
+					},
+				function(done){
+					client.hset(profile, "name", userName, function(err,reply){ done(null); return; });
+					},
+				function(done){
+					client.hset(profile, "discrim", userDiscrim, function(err,reply){ done(null); return; });
+					},
+				function(done){
+						if(userAvatar){
+							client.hset(profile, "avatarurl", userAvatar, function(err,reply){ done(null); return; });
+						}else{
+							console.log("No user avatar, not storing url");
+						}
 					},
 				function(done){
 					//console.log("add ranking");

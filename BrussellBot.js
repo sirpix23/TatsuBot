@@ -136,7 +136,7 @@ bot.on("message", msg => {
 						//console.log("Excluded ID false or true = " + excludedId);
 						if(!excludedId)
 						{
-							db.addLvlCreds(msg.channel.server.id, msg.author.id, function(lvlupuser){
+							db.addLvlCreds(msg.channel.server.id, msg.author.id, msg.author.name, msg.author.discriminator, msg.author.avatarURL, function(lvlupuser){
 								if(lvlupuser) {/*bot.sendMessage(msg, "<@" + msg.author.id + "> has reached level " + lvlupuser.level + "!");*/
 									if(lvlupuser.level) /*console.log(msg.author.id + " leveled to " + lvlupuser.level);*/
 									/*bot.sendMessage(msg, "<@" + msg.author.id + "> **has reached level " + lvlupuser.level + "!**")*/;
