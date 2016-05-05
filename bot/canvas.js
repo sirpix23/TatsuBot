@@ -35,40 +35,47 @@ function loadFileUrl(imgUrl, cb){
 	});
 }
 
-/*
-function loadFileUrl(webUrl, cb){
-	urlRequest.get(webUrl, function (error, response, body) {
-		if (!error && response.statusCode == 200) {
-			data = "data:" + response.headers["content-type"] + ";base64," + new Buffer(body);
-			if (error) throw error
-			img = new Image
-			img.onload = function() {
-			  cb(img)
-			}
-			img.src = data
-		}
-	});
-}
-*/
-
-
 exports.canvasTest = function(callback){
-	loadFileUrl('https://pbs.twimg.com/profile_images/675002642196729857/A0OpcJpA.png', 
+	loadFileUrl('http://puu.sh/oHhfN/b9a63723b6.jpg', 
 	function(img){
 	// get the size of the image. i suppose i could hardcode this, it'll never change. oh well. lazy.
-		var width = img.width;
-		var height = img.height;
+		var width = 360;
+		var height = 100;
 
 		// make a new canvas that is the same size as the overlay image, because we wouldn't want to let that get distorted or lose any fidelity
 		canvas = new Canvas(width, height);
 
 		// get that context
 		ctx = canvas.getContext('2d');
-		ctx.drawImage(img, 0, 0, width, height);
-		ctx.font = "40pt Calibri";
-		ctx.fillText("TESTING TEXT!", 50,50);
+		
+			
+		ctx.drawImage(img, 4, 4, 352, 92);
+		
+		ctx.globalAlpha=0.6;
+		ctx.fillStyle = 'rgba(255,255,255,1)';
+		ctx.fillRect(103, 4, 254, 92);
+		
+		ctx.globalAlpha=1.0;
+		
+		ctx.strokeStyle = 'rgba(76,76,76,1)';
+		ctx.lineWidth = 1;
+		ctx.strokeRect(3, 3, 354, 94);
+		ctx.shadowColor = 'rgba(76,76,76)';
+		ctx.shadowBlur = 5;
+		
+		
+		ctx.font = "20pt Calibri";
+		ctx.fillStyle = '#4c4c4c';
+		ctx.fillText("TESTING", 100,50);
 		//fs.writeFileSync('current.png', canvas.toDataURL());
 		//console.log(canvas.toDataURL());	
+		
+		//ctx.rect(3, 103, 100, 64);
+		//ctx.fillStyle = 'black';
+		//ctx.fill();
+		//ctx.strokeStyle = 'rgba(76,76,76,0.3)';
+		//ctx.stroke();
+		
 		callback(canvas.toBuffer());
 	});
 	
